@@ -70,6 +70,29 @@
     \item $\mathbb{C}$ is the set of complex numbers. Remember that complex numbers are numbers made up of a real part and an imaginary part $C + Xi$ where $C$ is a real number and $X$ is the coefficient of the imaginary part.
 \end{itemize}
 
+\textbf{Set-builder notation} is used to describe sets that are too big to list in braces: $E={2n:n \in A}$.
+In general: $X=\{A(x):P\}$ in words, ``for all A(x) such that \textit{P} is true.''\\
+Here are some intervals described with set notation.
+\begin{itemize}
+    \item Closed interval: $(a, b)$ = $\{x=\mathbb R:a < x < b\}$
+    \item Open interval: $[a, b]$ = $\{x=\mathbb R:a \leq x \leq b\}$
+    \item Infinite interval: $(-\infty, b]$ = $\{x=\mathbb R:x \leq b\}$
+\end{itemize}
+
+\subsubsection{Cartesian Product}
+
+\hspace{\parindent}An ordered pair is a list $(x, y)$ of two elements. The \textbf{Cartesian product} of two sets $A$ and $B$ is another set denoted as $A \times B$ which is defined as $A \times B = \{(a, b):a\in A, b\in B\}$.\\
+Given $A=\{k,l,m\}$ and $B=\{q,r\}$, $A \times B = {(k,q),(k,r),(l,q),(l, r),(m, q),(m,r)}$\vspace{5pt}
+
+The set $\mathbb R \times \mathbb R$, commonly denoted $\mathbb{R}^2$, is the set of points of the Cartesian plane. The set $\mathbb R \times \mathbb N$ would be a bunch of horizontal lines starting from $y=1$ and the set $\mathbb N \times \mathbb N$ would just be a bunch of points located in the first quadrant of a cartesian plane.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.35\textwidth]{nxn.pdf}
+    \caption{$\mathbb{N}^2$ in the cartesian plane.}
+\end{figure}
+
+Cartesian products can be done with more than two sets. The dimensionality of the ordered list would equal the amount of sets multipled together.
+
 $\subseteq$ is symbolic for ``subset of''. We say that a set, $A$ is a subset of another set, $B$ if $B$ contains all of the elements in $A$\hspace{5pt}$(\forall a \in A, a \in B)$. For example, $\mathbb{N} \subseteq \mathbb{Z}$ Likewise, $\mathbb{Z} \subseteq {Q}$ and so on. Note that $\mathbb{R} \subseteq \mathbb{C}$ because we can represent any real number with a complex number by letting the coefficient of the imaginary part equal $0$.
 
 \subsection{Ordering}
@@ -419,12 +442,12 @@ Consider a rectangle formed by points $A,B,C,D$.
 \bigskip\\
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.52\textwidth]{rect.pdf}
+    \includegraphics[width=0.45\textwidth]{rect.pdf}
 \end{figure}
 
 Notice that parallel segments $\overline{AC}$ and $\overline{BD}$ are equal in length. Likewise, $\overline{AB}$ and $\overline{CD}$ are also equal in length. $\overline{AD}$ divides the rectangle into two right triangles. By \textbf{3.2.3} we know that the two right triangles that make up the rectangle are congruent by our assertion that parallel segments of a rectangle are equal in length. Assuming that area of the rectangle is given by $A=ab$ where $a$ is the length of the segment $\overline{AB}$ and $b$ is the length of $\overline{AC}$ we can say that the two triangles are congruent. Furthermore, the area of one triangle is half the area of the rectangle.
 
-\thm{}{
+\thm{Pythagorean Theorem}{
     Suppose that $a$ and $b$ are the lengths of the legs of a triangle and $c$ is the length of the hypotenuse. Then $a^2+b^2=c^2$.
 }
 
