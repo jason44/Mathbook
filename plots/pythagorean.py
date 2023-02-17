@@ -32,13 +32,21 @@ plt.annotate('B', xy=(6.0, -0.50), fontsize=13, weight='bold', va='center', ha='
 plt.annotate('C', xy=(-0.5, 4), fontsize=13, weight='bold', va='center', ha='center')
 #plt.annotate('D', xy=(9.15, 3.15), fontsize=13, weight='bold', va='center', ha='center')
 
-plt.plot(xt1, yt1, marker='o', markerfacecolor='r', markeredgecolor='r', lw=2)
-plt.plot(xt2, yt2, marker='o', markerfacecolor='r', markeredgecolor='r', lw=2)
-plt.plot(xt3, yt3, marker='o', markerfacecolor='r', markeredgecolor='r', lw=2)
-plt.plot(xt4, yt4, marker='o', markerfacecolor='r', markeredgecolor='r', lw=2)
-#plt.show()
+
+plt.plot(xt1, yt1, marker='o', markerfacecolor='r', markeredgecolor='r', lw=2, color=(1,0,0))
+plt.fill(xt1, yt1, facecolor=(1,0,0, 0.4))
+
+plt.plot(xt2, yt2, marker='o', markerfacecolor='r', markeredgecolor='r', lw=2, color=(0,0,1))
+plt.fill(xt2, yt2, facecolor=(0,0,1, 0.4))
+
+plt.plot(xt3, yt3, marker='o', markerfacecolor='r', markeredgecolor='r', lw=2, color=(0,1,0))
+plt.fill(xt3, yt3, facecolor=(0,1,0, 0.4))
+
+plt.plot(xt4, yt4, marker='o', markerfacecolor='r', markeredgecolor='r', lw=2, color=(1, 0.5, 0.2))
+plt.fill(xt4, yt4, facecolor=(1,0.5,0.2, 0.4))
 
 
 
 #plt.savefig("test.png", bbox_inches='tight')
+#plt.show()
 plt.savefig("pythagorean.pdf", bbox_inches='tight')
