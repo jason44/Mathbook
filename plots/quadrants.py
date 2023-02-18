@@ -21,7 +21,6 @@ ax.set_xticks(np.arange(-10, 11, step=1))
 ax.set_yticks(np.arange(-10, 11, step=1))
 #ax.set_yticklabels()
 ax.tick_params(axis='both', which='major', labelsize=8)
-ax.tick_params(axis='both', which='minor', labelsize=8)
 ax.xaxis.set_ticklabels([])
 ax.yaxis.set_ticklabels([])
 
