@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.axes as axes
-
+import matplotlib.patches as patches
 
 class PltPolygon:
 	def __init__(self, color=[0,0,0], fill=True, fill_alpha=0.5):
@@ -20,7 +20,6 @@ class PltRectangle(PltPolygon):
 		coordinates.append(coordinates[0])
 		xs, ys = zip(*coordinates)
 		self.shape(xs, ys)
-
 	
 # borders and figure scaline are broken until we can make 
 class PltScene:	
@@ -29,14 +28,15 @@ class PltScene:
 		self.border_color = border_color
 		self.border_linewidth = border_color
 		self.hscale = hscale
-		self.vscale = vscale
-		self.polygons = []
+		self.vscale = vscale 
+		self.polygons = [] 
 		self.xrange = xrange
-		self.yrange = yrange
+		self.yrange = yrange 
 		self.fig = plt.figure(figsize=(3*self.hscale, 3*self.vscale), 
-			linewidth=border_linewidth)
-		#plt.xlim(self.xrange[0], self.xrange[1])
-		#plt.ylim(self.yrange[0], self.yrange[1])
+			linewidth=border_linewidth) 
+		self.local_ax = self.fig.add_subplot(1,1,1)
+		self.local_ax.set_xlim([xrange[0], xrange[1]+0.5])
+		self.local_ax.set_ylim([yrange[0], yrange[1]+0.5])
 	
 	def origin(self):
 		return (self.canvas[0]/2, self.canvas[1]/2)
@@ -53,6 +53,10 @@ class PltScene:
 	
 	def dot(self, x, y, color='r', size=5.0):
 		plt.plot(x, y, marker='o', markerfacecolor=color, markeredgecolor=color, markersize=size)
+	
+	def circle(self, center=(0, 0), r=1, color=(0,0,1), face=True):
+		c = plt.Circle(center, r, edgecolor=color, facecolor=(color[0], color[1], color[2], 0.3))	
+		self.local_ax.add_patch(c)
 
 	def save(self, name):
 		plt.savefig(name, bbox_inches='tight', pad_inches=0, 
@@ -60,7 +64,6 @@ class PltScene:
   
 	def show():
 		plt.show()
-
   
 class PltGridScene(PltScene):
 	def __init__(self, xrange=(-10, 10), yrange=(-10, 10), grid_linewidth=1.0, grid_color='b', grid_alpha=0.3, 
@@ -84,7 +87,7 @@ class PltGridScene(PltScene):
 			self.ax.tick_params(axis='both', which='major', labelsize=8)
 		else:	
 			self.ax.tick_params(axis='both', which='major', bottom=False, top=False, 
-                       			labelbottom=False, labelleft=False)
+                       			right=False, left=False, labelbottom=False, labelleft=False)
 		if not tick_labels:
 			print("HEY")
 			self.ax.xaxis.set_ticklabels([])

@@ -1,2 +1,3 @@
 plots/*.pdf
 plots/__pycache__/
+plots/*.swp
