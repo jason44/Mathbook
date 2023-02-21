@@ -6,6 +6,7 @@
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{makecell}
+\usepackage{longtable}
 
 \graphicspath{{figs/}}
 
@@ -642,9 +643,9 @@ Given two points $P, Q$ and an arbitrary point $R$. The distance $\overline{PR}$
 
 \section{Logic Laws}
 
-\begin{tabular}{|p{0.20\linewidth}|p{0.50\linewidth}|p{0.30\linewidth}|}
+\begin{longtable}{|p{0.20\linewidth}|p{0.50\linewidth}|p{0.30\linewidth}|}
     \hline
-    \textbf{Law} & \textbf{Definition} & \textbf{Symbolic Representation} \\
+    \makecell{\textbf{Law}} & \makecell{\textbf{Definition}} & \makecell{\textbf{Symbolic Representation}} \\
     \hline
     \makecell{\textbf{Modus Ponens}} & The consequence follows from the premise. & $((A \rightarrow B) \wedge A) \vdash B$ \\
     \hline
@@ -662,7 +663,32 @@ Given two points $P, Q$ and an arbitrary point $R$. The distance $\overline{PR}$
     \hline
     \makecell{\textbf{Simplification}} & If $A$ and $B$, then $A$ holds. & $(A \wedge B) \vdash A$ \\
     \hline
-\end{tabular}\bigskip\\
-\footnote{Exhaustive list of logic laws courtesy of Wikipedia.}
+    \makecell{\textbf{Conjunction}} & If $A$, $B$ is true respectively then $A$ and $B$ is true. & $A,B \vdash (A \wedge B)$ \\
+    \hline
+    \makecell{\textbf{Addition}} & If $A$, then $A$ or $B$ holds. & $A,B \vdash (A \vee B)$ \\
+    \hline
+    \makecell{\textbf{Composition}} & If $A$ implies $B$ and $A$ implies $C$ and $A$, then both $B$ and $C$ holds. & $(A \rightarrow B) \wedge (A \rightarrow C) \vdash (A \rightarrow (B \wedge C))$ \\
+    \hline
+    \makecell{\textbf{De Morgan's} \\ \textbf{Law}(1)} & The negation of the proposition $A$ and $B$ is the following: not $A$ or not $B$. & $\neg{(A \wedge B)} \vdash (\neg{A} \vee \neg{B})$ \\
+    \hline
+    \makecell{\textbf{De Morgan's} \\ \textbf{Law}(2)} & The negation of the proposition $A$ or $B$ is the following: not $A$ and not $B$. & $\neg{(A \vee B)} \vdash (\neg{A} \wedge \neg{B})$ \\
+    \hline
+    \makecell{\textbf{Commutation}(1)} & The proposition $A$ and $B$ is equivalent to $B$ and $A$. & $(A \wedge B) \vdash (B \wedge A)$ \\
+    \hline
+    \makecell{\textbf{Commutation}(2)} & The proposition $A$ or $B$ is equivalent to $B$ or $A$. & $(A \vee B) \vdash (B \vee A)$ \\
+    \hline
+    \makecell{\textbf{Commutation}(3)} & The proposition ``$A$ is equivalent to $B$'' is the same as ``$B$ is equivalent to $A$''. & $(A \equiv B) \vdash (B \equiv A)$ \\
+    \hline
+    \makecell{\textbf{Association}(1)} & The proposition ($A$ and $B$) and $C$ is the same as $A$ and ($B$ and $C$). & $(A \wedge B) \wedge C \vdash A (B \wedge C)$ \\
+    \hline
+    \makecell{\textbf{Association}(2)} & The proposition ($A$ or $B$) or $C$ is the same as $A$ or ($B$ or $C$). & $(A \vee B) \vee C \vdash A (B \vee C)$ \\
+    \hline
+    \makecell{\textbf{Distrbution}(1)} & The proposition $A$ and ($B$ or $C$) is the same as ($A$ and $B$) or ($A$ and $C$). & $A \wedge (B \vee C) \vdash (A \wedge B) \vee (A \wedge C)$ \\
+    \hline
+    \makecell{\textbf{Distrbution}(2)} & The proposition $A$ or ($B$ and $C$) is the same as ($A$ or $B$) and ($A$ or $C$). & $A \vee (B \wedge C) \vdash (A \vee B) \wedge (A \vee C)$ \\
+    \hline
+
+    \caption{List of logic laws courtesy of Wikipedia.}
+\end{longtable}
 
 \end{document}
