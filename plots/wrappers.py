@@ -89,7 +89,6 @@ class PltGridScene(PltScene):
 			self.ax.tick_params(axis='both', which='major', bottom=False, top=False, 
                        			right=False, left=False, labelbottom=False, labelleft=False)
 		if not tick_labels:
-			print("HEY")
 			self.ax.xaxis.set_ticklabels([])
 			self.ax.yaxis.set_ticklabels([])
 	

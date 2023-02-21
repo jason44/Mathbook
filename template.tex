@@ -5,6 +5,7 @@
 \usepackage{gensymb}
 \usepackage{graphicx}
 \usepackage{float}
+\usepackage{makecell}
 
 \graphicspath{{figs/}}
 
@@ -48,6 +49,35 @@
 \chapter{Prerequisites}
 
 \newpage
+
+\section{Logic}
+
+\hspace{\parindent}A \textbf{proposition} is a statement that is either true or false. For example, ``$x>0$'' is either true or false. On the other hand,  ``How is the weather today'' is not a proposition because it cannot be categorized as either true or false. An \textbf{argument} is made up of a \textbf{premise} and a \textbf{conclusion}. A premise is a set of propositions that support the conclusion while the conclusion is a proposition whose truthfullness follows from the premise.
+
+As a logical consequence, if the premise is true, then the conclusion must be true. For example, consider the argument:
+\begin{center}
+    $(1)$ I will draw either a circle or square\\
+    $(2)$ I drew a circle\\
+    $\therefore$ I did not draw a square
+\end{center}
+Notice that if the premise is true, then it must be the case that the conclusion is also true. These types of arguments are \textbf{truth-perserving}
+\begin{center}
+    $(1)$ A pair is a fruit\\
+    $(2)$ An apple is a fruit\\
+    $\therefore$ A pair is an apple
+\end{center}
+Here, we can obviously see a situation where the premise is true, yet the conclusion is false. Arguments where the conclusion does not follow from the premise; arguments where the premise does not entail the conclusion are not truth-perserving.
+
+This law of logic is called \textbf{Modus Ponens} and is very important in mathematics. Many theorems are written with an if $A$ then $B$ structure. This law lets us say that $B$ follows from $A$, if $A$ is true. Symbolically, we would write it as $((A \rightarrow B) \wedge A) \vdash B$.
+
+\textbf{Modus Tollens} follows from modus ponens by stating that if $A$ implies $B$, then not $A$ entails not $B$. Symbolically, $((A \rightarrow B) \wedge \neg{A}) \vdash \neg{B}$.
+
+A \textbf{Hypothetical Syllogism} states that if $A$ implies $B$, and $B$ implies $C$, then $A$ implies $C$. Symbolically, $(A \rightarrow B) \wedge (B \rightarrow C) \vdash (A \rightarrow C)$.
+
+A \textbf{Disjunctive Syllogism} states that if either $A$ or $B$ is true, then $A$ being true entails that $B$ is not true and vice-versa. Symbolically, $((A \vee B) \wedge \neg{B}) \vdash A$.
+An exhaustive list of logic laws is given in the Index
+
+\subsection{Validity}
 
 \section{Notation}
 \dfn{}{
@@ -99,7 +129,7 @@ Cartesian products can be done with more than two sets. The dimensionality of th
 
 \subsubsection{Subsets}
 
-\hspace{\parindent}$\subseteq$ is symbolic for ``subset of''. We say that a set, $A$ is a subset of another set, $B$ if $B$ contains all of the elements in $A$\hspace{5pt}$(\forall a \in A, a \in B)$. For example, $\mathbb{N} \subseteq \mathbb{Z}$ Likewise, $\mathbb{Z} \subseteq {Q}$ and $\mathbb{R} \subseteq \mathbb{C}$. See that $\mathbb{R} \subseteq \mathbb{C}$ because we can represent any real number with a complex number by letting the coefficient of the imaginary part equal $0$.
+\hspace{\parindent}$\subseteq$ is symbolic for ``subset of''. We say that a set, $A$ is a subset of another set, $B$ if $B$ contains all of the elements in $A$\hspace{5pt}$(\forall a \in A, a \in B)$. For example, $\mathbb{N} \subseteq \mathbb{Z}$ Likewise, $\mathbb{Z} \subseteq {Q}$ and $\mathbb{R} \subseteq \mathbb{C}$. See that $\mathbb{R} \subseteq \mathbb{C}$ because we can represent any real number with a complex number by letting the coefficient of the imaginary part equal $0$. Given two sets, $A$ and $B$, consider when $A \subseteq B$ and $B \subseteq A$. It follows that $A=B$. This fact is key in proving equality between two seemingly different sets.
 
 \subsubsection{Power Sets}
 
@@ -114,8 +144,12 @@ The \textbf{difference} of two sets A and B is: $A - B$ = $\{x: (x \in A) \wedge
 }\bigskip
 
 In other words, $A \cup B$ is the set of all elements in $A$, in $B$, or both. $A \cap B$ is the set of all elements in both $A$ and $B$. $A - B$ is the set of all elements in $A$ but not in $B$\vspace{5pt}\\
-Notice that when $A=\{(x, x^{2}):x \in \mathbb{R}\}$ and $B=\{(x, x+2):x \in \mathbb{R}\}$; in other words, when A and B are a set of function input and output pairs, $A \cap B$ is a set containing the point(s) of intersection between the two functions.\bigskip\\
+Notice that when $A=\{(x, x^{2}):x \in \mathbb{R}\}$ and $B=\{(x, x+2):x \in \mathbb{R}\}$; in other words, when A and B are a set of function input and output pairs, $A \cap B$ is a set containing the point(s) of intersection between the two functions.
 Two sets, $A$ and $B$ are said to be disjoint sets if they share no elements in common.
+
+\subsubsection{Complement}
+
+\hspace{\parindent}A \textit{universal set}, denoted by $U$, is a set where for all sets $A$, it is the case that $A \in U$ and $\forall x \in A: x \in U$. By this definition, $U \in U$. But this is disallowed in most systems of set theory. For example, in \textit{Zermelo-Fraenkel} set theory the \textit{axiom of foundation} says that for all sets $A \neq \O$, there exists a set $B$ in $A$ that does not intsersect with $A$. Now, consider the set $\{A\}$. By the axiom of foundation, there exist a set in $\{A\}$ that is disjoint from it, therefore $A \cap \{A\}= \O$. Which is to say that $A \notin A$. So, sets cannot be self-referential. Consider a universal set that is not self-referential. Suppose that there is a set $U$ where $A \subseteq U$ then $U-A$ is the \textbf{complement} of $A$ denoted by $\bar{A}$. Here, $U$ is a larger set than $A$ that happens to contain $A$ and all other sets that are under consideration for the specific scenario. For example if $A=\{x \in \mathbb{Z}: x = 2n+1, n\in \mathbb{Z}\}$ we could say that $U=\mathbb{Z}$. or $U=\mathbb{Q}$ or $U=\mathbb{R}$ and so on.
 
 \subsection{Ordering}
 
@@ -596,5 +630,39 @@ Since the factors of $n!$ has at least one even number, $n!$ is even.
 \as{}{
 Given two points $P, Q$ and an arbitrary point $R$. The distance $\overline{PR}$ and $\overline{QR}$ are equal \textit{iff} $R$ lies in the perpendicular bisector of $\overline{PQ}$.
 }
+
+
+\iffalse
+\textit{axiom of pairing} states that given a set $A$ and $B$, there is a set $D$ that contains $A$ and $B$. In set notation, $\forall A \forall B \exists D \ni ((A \in D) \wedge (B \in D))$.%%%
+\fi
+
+\chapter{Index}
+
+\newpage
+
+\section{Logic Laws}
+
+\begin{tabular}{|p{0.20\linewidth}|p{0.50\linewidth}|p{0.30\linewidth}|}
+    \hline
+    \textbf{Law} & \textbf{Definition} & \textbf{Symbolic Representation} \\
+    \hline
+    \makecell{\textbf{Modus Ponens}} & The consequence follows from the premise. & $((A \rightarrow B) \wedge A) \vdash B$ \\
+    \hline
+    \makecell{\textbf{Modus Tollens}} & If the premise is false, then the conclusion is false. & $((A \rightarrow B) \wedge \neg{A}) \vdash \neg{B}$ \\
+    \hline
+    \makecell{\textbf{Hypothetical} \\ \textbf{Syllogism}} & If A implies B and B implies C, then A implies C. & $(A \rightarrow B) \wedge (B \rightarrow C) \vdash (A \rightarrow C)$ \\
+    \hline
+    \makecell{\textbf{Disjunctive} \\ \textbf{Syllogism}} & If $A$ or $B$, then not $B$ implies $A$ and vice-versa. & $((A \vee B) \wedge \neg{B}) \vdash A$ \\
+    \hline
+    \makecell{\textbf{Constructive} \\ \textbf{Dilemma}} & If $A$ implies $B$ and $C$ implies $D$, then $A$ or $C$ entails $B$ or $D$. & $(A \rightarrow B) \wedge (C \rightarrow D) \wedge (A \vee C) \vdash (B \vee D)$ \\
+    \hline
+    \makecell{\textbf{Destructive} \\ \textbf{Dilemma}} & If $A$ implies $B$ and $C$ implies $D$, then not $B$ or not $D$ entails not $A$ or not $C$. & $(A \rightarrow B) \wedge (C \rightarrow D) \wedge (\neg{B} \vee \neg{D}) \vdash (\neg{A} \vee \neg{C})$ \\
+    \hline
+    \makecell{\textbf{Bidirectional} \\ \textbf{Dilemma}} & If $A$ implies $B$ and $C$ implies $D$, then $A$ or not $C$ entails $B$ or not $D$. & $(A \rightarrow B) \wedge (C \rightarrow D) \wedge (A \vee \neg{C}) \vdash (B \vee \neg{D})$ \\
+    \hline
+    \makecell{\textbf{Simplification}} & If $A$ and $B$, then $A$ holds. & $(A \wedge B) \vdash A$ \\
+    \hline
+\end{tabular}\bigskip\\
+\footnote{Exhaustive list of logic laws courtesy of Wikipedia.}
 
 \end{document}
