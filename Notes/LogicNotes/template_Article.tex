@@ -1,0 +1,429 @@
+\documentclass[]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{wasysym}
+\usepackage{graphicx}
+\graphicspath{{images/}}
+
+%opening
+\title{Logic Notes}
+\author{Jason Soegondo}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\begin{abstract}
+\end{abstract}
+
+\section{Propositional Logic}
+\subsection{Propositions}
+A statement about the world that is either TRUE or FALSE
+
+ie: I am hot, that car is green, I think it will snow tonight 
+\subsection{Arguments}
+A set of propositions. Made up of:
+\begin{enumerate}
+	\item{\textbf{premise}: the propositions used to support the conclusion}
+	\item{\textbf{conclusion}: the proposition that the argument is trying to}
+\end{enumerate}
+Example of an argument:\\
+because: the grass is green (premise)\\
+the sun is out\\
+the sky is blue\\
+therefore: it is summer (conclusion)
+\subsection{Logical Consequence}
+\begin{itemize}
+	\item{The truth of the premise guarantees the truth of the conclusion}
+	\item{It is impossible for any of the premise to be true and the conclusion to NOT be true}
+	\item{It is impossible for the premise to be ALL true without the conclusion being true}
+\end{itemize}
+Example:\\
+the rabbit went left or it went right\\
+the rabbit did not go right\\
+therefore: the rabbit went left\vspace{5pt}\\
+This property is called \textit{necessary-truth-preservation*(NTP)}\\
+Arguments with this property are calle \textit{necessarily-truth-preserving(NTP)}\vspace{5pt}\\
+\textbf{Example of non-NTP Argument:}\vspace{5pt}\\
+All kelpies are dogs\\
+Maisie is a dog.\\
+Therefore: Maisie is a kelpie\vspace{5pt}\\
+All dogs are mammals\\ 
+All dogs are animals\\
+Therefore: All mammals are animals\\
+\subsection{Validity}
+\subsubsection{Types of Valid Arguments}
+1. The premise cannot be true while the conclusion is false (NTP)
+
+ie: "the water is clear"; therefore, you can see through the water
+\vspace{5pt}\\
+2. The form or structure of the argument gurantees it is NTP
+
+$\$$4.2 to see why valid argument forms gurantee valid instances of said form
+\subsubsection{Types of Invalid Arguments}
+1. Argument is not NTP\vspace{5pt}\\
+2. Argument may be NTP, but the structure of the argument underwrites the conclusion
+
+TODO
+\subsubsection{Deductive Reasoning}
+Reasoning in which validity is a prerequisite for goodness
+\begin{itemize}
+	\item{An argument is \textit{invalid} if its premise is all true but its conclusion is false\vspace{5pt}\\Water is blue and grass is green\\ 
+	$\therefore$ Water is red and grass is pink\vspace{5pt}\\
+	$(A \wedge Q)$\\
+	$\therefore \neg{A}$}
+	\item{An argument is \textit{valid} if its premise is all true and its conclusion is by extension also true\vspace{5pt}\\Water is blue and grass is green\\ $\therefore$ Water is blue\vspace{5pt}\\
+	$(A \wedge Q)$\\
+	$\therefore {Q}$}
+\end{itemize}
+\subsubsection{Non-deductive Reasoning}
+\begin{enumerate}
+	\item{\textbf{Inductive Reasoning}:
+		draws conclusion about future events based on pass observations
+		
+		ie: "Sugar in tea dissolves"; therefore, all sugar is soluble	}
+	\item{\textbf{Abductive Reasoning}:
+		"inference to the best explanation."
+		Reasoning from available data on hand to the best available explanation of that data}
+\end{enumerate}
+\subsubsection{Soundness of an Argument}
+\begin{itemize}
+	\item{An argument is *sound* if it is valid and in addition has premises that are in fact true}
+	\item{Soundness is not really in the scope of logic which is only concerned with the laws of truths. It is more of a \textit{reasoning} topic}
+\end{itemize}
+\subsection{Connectives}
+Arguments are made up of:
+\begin{enumerate}
+	\item{\textbf{Basic propositions}: propositions having no parts that are themselves propositions }
+	\item{\textbf{Compound propositions}: propositions made from other propositions and \textit{connectives}}
+\end{enumerate}
+\subsubsection{Truth-functional connective}
+A connective where the truth or falsity of the compound proposition made up of said connective and some other proposition, depends solely on the truth or falsity of the component proposition. All following connectives are \textit{truth-functional}
+\subsubsection{Negation}
+Example: "Maisie is NOT a rottweiler" -> "Maisie is a rottweiler" + connective("not")\\
+"Maisie is not a rottweiler" is the \textit{negation} of "Maisie is a rottweiler"\\
+"Maisie is a rottweiler" is the \textit{negand} of "Maisie is not a rottweiler"\vspace{5pt}\\
+There are of course other ways to add a negation to a proposition in the english language
+\begin{quote}
+	If the negand is true, the negation is false, and if the negand is false, the negation is true
+\end{quote}
+\textit{Double Negation} Example: "It is \textit{not} the case that Bob is \textit{not} a good student 
+
+\subsubsection{Conjunction}
+Example: "The sun is shining and I am happy", "Masie and Rosie are my friends", "We watched the movie and ate popcorn"\\
+"Maisie is tired and the road is long" is the \textit{conjunction} of "Maisie is tired" and "the road is long"\\
+"Maisie is tired" and "the road is long" are the \textit{conjuncts} of "Maisie is tired and the road is long"
+\begin{quote}
+The conjunction is true just in case both conjuncts are true.
+If one or more of the conjuncts is false, the conjunction is false
+\end{quote}
+
+\subsubsection{Disjunction}
+"Frances had eggs for breakfast or for lunch" is the \textit{disjunction} of "Frances had eggs for breakfast"
+and "Frances had eggs for lunch"\\
+"Frances had eggs for breakfast" and "Frances had eggs for lunch" are the \textit{disjuncts} of 
+"Frances had eggs for breakfast or for lunch"
+\begin{quote}
+The disjunction is true just in case at least one of the disjuncts is true.
+If both the disjuncts are false, the disjunction is false
+\end{quote}
+
+\subsubsection{Conditional}
+Example: "If there is smoke, then there is a fire"\\
+"there is smoke" is the \textit{antecedent}\\
+"there is fire" is the\textit{consequent}\\
+"If there is smoke, then there is a fire" is the \textit{conditional}\\
+NOTE: The antecedent is not always written first\\
+Example 2: "I am in New York only if I am in America"\\
+"I am in New York" is the consequent\\
+"I am in America" is the antecedent
+\begin{quote}
+The consequent can still be true if the antecedent is false, but the converse is not true.\\
+If the antecedent is true, consequent must be true as well\\(if (antecedent) then (consequent))\\
+\hspace*{5pt}(assuming the whole conditional is true)
+\end{quote}
+\subsubsection{Bi-conditional}
+Example: "Your cup contains coffee if and only if you pressed the red button"\\
+Is the \textit{conjunction} of the following \textit{conditionals}:
+\begin{enumerate}
+	\item{"Your cup contains coffee if you pressed the red button":\\
+if "your cup contains coffee" then "you pressed the red button"}
+	\item{"Your cup contains coffee only if "you pressed the red button":\\
+if "you pressed the red button" then "your cup contains coffee"}
+\end{enumerate}
+
+\section{Proposition Language}
+\subsection{Syntax}
+\textbf{Negation}\hspace{5pt}$\neg $\\
+Example: $\neg{P}$
+\vspace{5pt}\\
+\textbf{Conjunction}\hspace{5pt}${\wedge}$\\
+Example: $(P \wedge Q)$
+\vspace{5pt}\\
+\textbf{Disjunction}\hspace{5pt}${\vee}$\\
+Example: $(P \vee Q)$
+\vspace{5pt}\\
+\textbf{Conditional}\hspace{5pt}${\rightarrow}$\\
+Example: $(P \rightarrow Q)$
+\vspace{5pt}\\\textbf{Biconditional}\hspace{5pt}${\leftrightarrow}$\\
+Example: $(P \leftrightarrow Q)$
+\subsection{Other Notation}
+\textbf{Negation}\\
+$\texttildelow{P}~~~~-{P}~~~~\bar{P}~~~~NOT~P$
+\vspace{5pt}\\
+\textbf{Conjunction}\\
+$(P~\&~Q)~~~~(P \cdot Q)~~~~(P~Q)~~~~P~AND~Q$
+\vspace{5pt}\\
+\textbf{Disjunction}\\
+$P~OR~Q$
+\vspace{5pt}\\
+\textbf{Conditional}\\
+$(P \supset Q)~~~~(P \Rightarrow Q)$ 
+\vspace{5pt}\\
+\textbf{Biconditional}\\
+$(P \equiv Q)~~~~(P \Leftrightarrow Q)$
+\subsection{WFF (Well-Formed Formulas)}
+Variables that can represent a set of propositions\\
+$\alpha$, $\beta$, $\gamma$, and $\delta$ are often used for wffs\\
+Definition of a WFF:
+\begin{enumerate}
+	\item{Any basic proposition}
+	\item{Any construct containing wffs\vspace{5pt}\\
+	     NOTE: constructs with connectives that act on two objects must be enclosed with parentheses for it to be considered a wff..}
+	\item{Anything else is not a wff}
+\end{enumerate}
+\textbf{Examples}:\\
+$(A \wedge B)$\\
+$(\alpha \vee \beta)$\\
+$(\neg{\delta})$\\
+are all well-formed formulas
+\subsubsection{Constructing WFFs}
+For an argument to be a wff, it must be constructed \textit{recursively} with wffs.\\
+$(\neg{P}\wedge(Q\wedge R))$ is a wff because:\\
+$P$, $Q$, and $R$ are all wff because they are basic propositions\\
+$\neg{P}$ is a wff because it is made up of a wff and a connective\\
+$(Q \wedge R)$ is a wff because it is made up of two wffs and a connective\\
+$(\neg{P}\wedge(Q\wedge R))$ is a wff because all of its terms are wffs
+\section{Truth Tables}
+\textbf{Bivalence} is the trait of a proposition to be either true or false, but not both. We assume that all propositions are fundamentally bivalent.
+\subsection{Truth Tables for Connectives}
+\textbf{Negation}\\
+\begin{tabular}{|c|c|}
+	\hline
+	$\alpha$ & $\neg{\alpha}$\\
+	\hline
+	T & F \\
+	F & T \\
+	\hline
+\end{tabular}\vspace{10pt}\\
+\textbf{Conjunction}\\
+\begin{tabular}{|c|c|c|}
+	\hline
+	$\alpha$ & $\beta$ & $\alpha \wedge \beta$\\
+	\hline
+	T & T & T\\
+	T & F & F\\
+	F & T & F\\
+	F & F & F\\
+	\hline
+\end{tabular}\vspace{10pt}\\
+\textbf{Disjunction}\\
+\begin{tabular}{|c|c|c|}
+	\hline
+	$\alpha$ & $\beta$ & $\alpha \vee \beta$\\
+	\hline
+	T & T & T\\
+	T & F & T\\
+	F & T & T\\
+	F & F & F\\
+	\hline
+\end{tabular}\vspace{10pt}\\
+\textbf{Conditional}\\
+\begin{tabular}{|c|c|c|}
+	\hline
+	$\alpha$ & $\beta$ & $\alpha \rightarrow \beta$\\
+	\hline
+	T & T & T\\
+	T & F & F\\
+	F & T & T\\
+	F & F & T\\
+	\hline
+\end{tabular}\vspace{10pt}\\
+\textbf{Biconditional}\\
+\begin{tabular}{|c|c|c|}
+	\hline
+	$\alpha$ & $\beta$ & $\alpha \leftrightarrow \beta$\\
+	\hline
+	T & T & T\\
+	T & F & F\\
+	F & T & F\\
+	F & F & T\\
+	\hline
+\end{tabular}\vspace{10pt}\\
+\textbf{Proposition Truth Table}\\
+Example: $((\neg{P} \vee Q) \leftrightarrow (P \wedge \neg{Q}))$\vspace{5pt}\\
+\begin{tabular}{|c|c|c|c|c|}
+	\hline
+	$P$ & $Q$ & $(\neg{P} \vee Q)$ & $(P \wedge \neg{Q})$ & $((\neg{P} \vee Q) \leftrightarrow (P \wedge \neg{Q}))$ \\
+	\hline
+	T & T & T & F & F\\
+	T & F & F & T & F\\
+	F & T & T & F & F\\
+	F & F & T & F & F\\
+	\hline
+\end{tabular}\vspace{10pt}\\
+Note that this proposition is actually a \textit{contradiction}
+\subsection{Single Propositions}
+\begin{itemize}
+	\item{If a proposition is true for every row in a truth table, it is called a \textit{tautology} or \textit{logical truth}}
+	\item{If a proposition is false for every row in a truth table, it is called a \textit{contradiction}, \textit{logical falsehood}, or \textit{unsatisfiable}}
+	\item{A proposition that is true only in some rows is \textit{satisfiable}}
+	\item{A proposition that is false only in some rows is \textit{nontautology}}
+\end{itemize}
+\subsection{Sets of Propositions}
+A set of propositions is denoted with $\{\}$. Example: $\{A, Q, P\}$
+\begin{itemize}
+	\item{If all propositions in a set can all be true at the same time, the set is \textit{satisfiable}}.
+	\item{If all propositions in a set cannot be all true at the same time, the set is \textit{unsatisfiable}}
+\end{itemize}
+\subsection{More on Validity}
+An argument is \textit{invalid} if all premises are true, but the conclusion is false.\\
+To find whether an argument is valid or not, construct a truth table. 
+\begin{enumerate}
+	\item{Begin by filling out the truth table for individual propositions}
+	\item{Then, for each \textit{premise} check if its true or false}
+	\item{If the premise is false, ignore the entire row because it does not meet the definition of validity}
+	\item{If there is a row where all premises are true but the conclusion is false, the argument is invalid. Otherwise, the argument is valid.}
+\end{enumerate}
+\textbf{Warnings on Validity}
+\begin{enumerate}
+	\item{True premises and true conclusions do not establish validity.
+	Rather, true premises and a false conclusion establish \textit{invalidity}}
+	\item Any argument where the conclusion is a tautology is valid ex: $(G \rightarrow G)$
+	\item An argument where the premises and conclusion form an unsatisfiable set is valid:\\
+	$S$\\
+	$\neg S$\\
+	$\therefore G$\vspace{5pt}\\
+	Given:\vspace{5pt}\\
+	\begin{tabular}{|c|c|c|}
+		\hline
+		$S$ & $G$ & $\neg{S}$\\
+		\hline
+		F & F & T\\
+		\hline
+	\end{tabular}\vspace{5pt}\\
+	The conclusion is false while the premise is true, but the set of premises + conclusion is \textit{unsatisfiable} so the argument is still valid.
+\end{enumerate}
+\section{Logical Forms}
+Logical forms replace all propositions with well-formed formulas(wffs). Wffs can represent single propositions or compound propositions.\vspace{5pt}\\
+$(A \wedge (B \rightarrow C))$ can be represented in two different logical forms:
+\begin{enumerate}
+	\item $(\alpha \wedge \beta)$
+	\item $(\alpha \wedge (\beta \rightarrow \gamma))$
+\end{enumerate}
+NOTE: $(A \wedge B)$ can also be represented with $(\alpha \wedge \beta)$; that is to say that logical forms are \textit{abstractions} that can represent an endless amount of different propositions.
+\subsection{Argument Forms}
+Similar to how logical forms are abstractions for propositions, Argument forms are abstractions for arguments.\\
+$P$\\
+$(P \rightarrow R)$\\
+$\therefore R$\\
+Can be represented by the following \textit{argument forms}:
+\begin{enumerate}
+ \item{$\alpha$\\$(\alpha \rightarrow \beta)$\\$\therefore \beta$}
+ \item{$\alpha$\\$\beta$\\$\therefore \gamma$}
+\end{enumerate}
+NOTE: there are many argument forms that you can use, some are a lot more clearer than others, but sometimes it may be more useful to use the more general forms to broadly group arguments together.
+\subsection{Validity and Form}
+Now, the validity test can be applied on argument forms to see if they are valid\\
+$\alpha$\\
+$(\alpha \rightarrow \beta)$\\
+$\therefore \beta$\vspace{5pt}\\
+\begin{tabular}{|c|c|c|}
+	\hline
+	$\alpha$ & $\beta$ & $(\alpha \rightarrow \beta)$\\
+	\hline
+	T & T & T\\
+	T & F & F\\
+	F & T & T\\
+	F & F & T\\
+	\hline
+\end{tabular}\vspace{5pt}\\
+Since the conclusion(column 2) is true when both premises(columns 1 and 3) are true, arguments of this form are valid.\vspace{5pt}\\
+NOTE: An argument form being valid is not the same as saying that an instance of that form is valid. Wffs are representations of propositions, so they do not say anything about the state of the world like propositions do. What it is saying is that all instances of an argument of that form is a valid argument.\vspace{5pt}\\
+Take a look at the \textit{valid} argument form above and replace all wffs with compound or single propositions. Since proposition always produce either true or false results, there is no combination of propositions that will produce a false conclusion while all premises are true. This is due to the fact that the argument form is valid.\vspace{5pt}\\
+$(A \wedge B)$\\
+$\neg(A \vee B)$\\
+$((A \wedge B)\rightarrow \neg(A \vee B))$\vspace{5pt}\\
+\begin{tabular}{|c|c|c|c|c|}
+	\hline
+	$A$ & $B$ & $(A \wedge B)$ & $\neg(A \vee B)$ & $((A \wedge B)\rightarrow \neg(A \vee B))$\\
+	\hline
+	T & T & T & F & F\\
+	T & F & F & F & T\\
+	F & T & F & F & T\\
+	F & F & F & T & T\\
+	\hline
+\end{tabular}\vspace{5pt}\\
+\subsection{Invalidity and Form}
+In general, not all instances of an invalid argument form are invalid arguments. Take the argument form:\vspace{5pt}\\
+$\beta$\\
+$(\alpha \rightarrow \beta)$\\
+$\therefore \alpha$\vspace{5pt}\\
+is invalid, but if we replace the wffs with certain propositions:\vspace{5pt}\\
+$P$\\
+$(P \rightarrow P)$\\
+$\therefore P$\vspace{5pt}\\
+the argument is still valid.
+\subsection{Functionally Complete Connectives}
+Zero-place connectives are either always true or always false.
+Zero-place connectives, usually called the \textit{verum} and \textit{falsum} are symbolized by $\top$, and $\bot$ respectively.\vspace{5pt}\\
+\begin{tabular}{|c|c|}
+ \hline
+ $\top$ & $\bot$\\
+ \hline
+ T & F\\
+ \hline
+\end{tabular}\vspace{5pt}\\
+Connectives can be defined in terms of other connectives. For example, $\neg$ can be defined in terms of $\rightarrow$ and $\bot$.\vspace{5pt}\\
+\begin{tabular}{|c|c|c|c|}
+\hline
+$\alpha$ & $\bot$  & $\alpha \rightarrow \bot$ & $\neg{a}$\\
+\hline
+T & F & F & F\\
+\hline
+F & F & T & T\\
+\hline
+\end{tabular}\vspace{5pt}\\
+As seen here, the propositions $\neg{a}$ and $a \rightarrow \bot$ are equivalent.\vspace{5pt}\\
+But why would we want to define connectives in terms of other connectives?
+Well take one example. $\vee$, $\wedge$, $\neg$ and $\veebar$ can all be defined with the propositions $\neg$ and $\wedge$ in the form $\neg{(\alpha \wedge \beta)}$. This proposition is actually a PL representation of a \textbf{NAND gate} used in semiconductors.
+\subsection{Trees}
+
+
+
+ 
+
+
+
+
+
+
+\section{References}
+\begin{figure}
+	\centering
+	\includegraphics[width=0.75\textwidth]{roundedrect.png}
+	\caption{A nice logo.}
+	\label{fig:logo}
+\end{figure}
+
+\begin{center}
+	...
+\end{center}
+	
+\begin{equation}
+	E=m
+\end{equation}
+
+\end{document}
