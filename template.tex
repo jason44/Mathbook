@@ -75,9 +75,31 @@ This law of logic is called \textbf{Modus Ponens} and is very important in mathe
 
 A \textbf{Hypothetical Syllogism} states that if $A$ implies $B$, and $B$ implies $C$, then $A$ implies $C$. Symbolically, $(A \rightarrow B) \wedge (B \rightarrow C) \vdash (A \rightarrow C)$.
 
-A \textbf{Disjunctive Syllogism} states that if either $A$ or $B$ is true, then $A$ being true entails that $B$ is not true and vice-versa. Symbolically, $((A \vee B) \wedge \neg{B}) \vdash A$.
-An exhaustive list of logic laws is given in the Index
+A \textbf{Disjunctive Syllogism} states that if either $A$ or $B$ is true, then $A$ being true entails that $B$ is not true and vice-versa. Symbolically, $((A \vee B) \wedge \neg{B}) \vdash A$. An exhaustive list of logic laws is given in the Index.
 
+A \textbf{logical connective} in propositional logic expresses a binary relation between two propositions. The main connectives are the following:
+\dfn{}{
+    \begin{itemize}
+        \item Conjunction $\wedge$\\
+            In english, \textit{and} can denote a conjunction.
+        \item Disjunction $\vee$\\
+            In english, \textit{or} can denote a disjunction.
+        \item Exclusive Disjunction $\veebar$\\
+            In english, either$\dots$or$\dots$ can denote that two propositions that are connected by a disjunction are mutually exclusive.
+        \item Negation $\neg$\\
+            In english, \textit{not} denotes a negation.
+        \item Conditional $\rightarrow$\\
+            In english ``if$\dots$then'' statements denote a conditional. $A$ implies $B$, and other structures can also be used to denote conditionals.
+        \item Biconditional $\leftrightarrow$\\
+            In english ``if and only if`` (\textit{iff}) statements denote a biconditional.
+    \end{itemize}
+}
+
+\nt{Consider the proposition $A \rightarrow B$. Note that if $A$, then $B$. But notice that the following is also valid: $\neg A$, $B$. Logically, this is valid because $B$ does not imply $A$. If the proposition was $A \leftrightarrow B$, then the pair $\neg A$, $B$ would be invalid.
+}
+
+\nt{To know whether the usage of a \textit{disjunction} is exclusive $\veebar$ or inclusive $\vee$, decide whether the two propositions are mutually exclusive. For example $A \vee \neg A$ is a valid proposition and an exclusive disjunction. We can omit the use of $\veebar$ here because the exclusivity of the disjunction follows from the definition of negation. Another method to determining exclusivity is the language that may denote exclusivity such as the word \textit{either}.
+}
 \subsection{Validity}
 
 \section{Notation}
@@ -624,7 +646,6 @@ Since the factors of $n!$ has at least one even number, $n!$ is even.
 }
 
 %Just extra stuff ignore this lol
-\nt{To know whether the usage of an \textit{or} statement is exclusive or inclusive, decide if the text explicitly uses words like ``either'' that may denote exclucivity. Second, see if both propositions can be true at the same time. If they cannot both be true, then the statement must \textit{exclusive or}, denoted symbolically as $\veebar$.}
 
 \section{Geometry}
 
@@ -643,7 +664,7 @@ Given two points $P, Q$ and an arbitrary point $R$. The distance $\overline{PR}$
 
 \section{Logic Laws}
 
-\begin{longtable}{|p{0.20\linewidth}|p{0.50\linewidth}|p{0.30\linewidth}|}
+\begin{longtable}{|p{0.20\linewidth}|p{0.45\linewidth}|p{0.35\linewidth}|}
     \hline
     \makecell{\textbf{Law}} & \makecell{\textbf{Definition}} & \makecell{\textbf{Symbolic Representation}} \\
     \hline
@@ -651,7 +672,7 @@ Given two points $P, Q$ and an arbitrary point $R$. The distance $\overline{PR}$
     \hline
     \makecell{\textbf{Modus Tollens}} & If the premise is false, then the conclusion is false. & $((A \rightarrow B) \wedge \neg{A}) \vdash \neg{B}$ \\
     \hline
-    \makecell{\textbf{Hypothetical} \\ \textbf{Syllogism}} & If A implies B and B implies C, then A implies C. & $(A \rightarrow B) \wedge (B \rightarrow C) \vdash (A \rightarrow C)$ \\
+    \makecell{\textbf{Hypothetical} \\ \textbf{Syllogism}} & If $A$ implies $B$ and $B$ implies $C$, then $A$ implies $C$. & $(A \rightarrow B) \wedge (B \rightarrow C) \vdash (A \rightarrow C)$ \\
     \hline
     \makecell{\textbf{Disjunctive} \\ \textbf{Syllogism}} & If $A$ or $B$, then not $B$ implies $A$ and vice-versa. & $((A \vee B) \wedge \neg{B}) \vdash A$ \\
     \hline
@@ -687,8 +708,32 @@ Given two points $P, Q$ and an arbitrary point $R$. The distance $\overline{PR}$
     \hline
     \makecell{\textbf{Distrbution}(2)} & The proposition $A$ or ($B$ and $C$) is the same as ($A$ or $B$) and ($A$ or $C$). & $A \vee (B \wedge C) \vdash (A \vee B) \wedge (A \vee C)$ \\
     \hline
-
+    \makecell{\textbf{Double} \\ \textbf{Negation}} & The negation of not $A$, is equivalent to $A$. & $A \vdash \neg \neg A$ \\
+    \hline
+    \makecell{\textbf{Transposition}} & If $A$ implies $B$, then not $A$ implies not $B$ & $(A \rightarrow B) \vdash (\neg A \rightarrow \neg B)$ \\
+    \hline
+    \makecell{\textbf{Material} \\ \textbf{Implication}} & If $A$ implies $B$, then not $A$ or $B$ & $(A \rightarrow B) \vdash (\neg A \vee B)$ \\
+    \hline
+    \makecell{\textbf{Material} \\ \textbf{Equivalence}(1)} & If $A$ implies $B$ and vice-versa, then $A$ implies $B$ and $B$ implies $A$ both hold. & $(A \leftrightarrow B) \vdash (A \rightarrow B) \wedge (B \rightarrow A)$ \\
+    \hline
+    \makecell{\textbf{Material} \\ \textbf{Equivalence}(2)} & If $A$ implies $B$ and vice-versa, either $A$ and $B$ holds or not $B$ and not $A$ holds. & $(A \leftrightarrow B) \vdash (A \wedge B) \vee (\neg A \wedge \neg B)$ \\
+    \hline
+    \makecell{\textbf{Material} \\ \textbf{Equivalence}(3)} & If $A$ implies $B$ and vice-versa, then ($A$ or not $B$) holds or (not $A$ or $B$) holds. & $(A \leftrightarrow B) \vdash (A \vee \neg B) \wedge (\neg A \vee B)$ \\
+    \hline
+    \makecell{\textbf{Exportation}} & If $A$ and $B$ implies $C$, then $A$ implies that $B$ implies $C$. & $(A \wedge B) \rightarrow C \vdash A \rightarrow (C \rightarrow B)$ \\
+    \hline
+    \makecell{\textbf{Tautology}(1)} & $A$ and $A$ is equivalent to $A$. & $(A \wedge A) \vdash A$ \\
+    \hline
+    \makecell{\textbf{Tautology}(2)} & $A$ or $A$ is equivalent to $A$. & $(A \vee A) \vdash A$ \\
+    \hline
+    \makecell{\textbf{Terium} \\ \textbf{non datur}} & Given a proposition $P$, either $P$ or not $P$. & $\vdash P \vee \neg P$ \\
+    \hline
+    \makecell{\textbf{Law of Non-} \\ \textbf{Contradiction}} & The proposition ``it is not the case that $P$ and not $P$'' is true. & $\vdash \neg (P \wedge \neg P)$ \\
+    \hline
     \caption{List of logic laws courtesy of Wikipedia.}
 \end{longtable}
+
+\nt{Some of the logic laws such as \textit{Material Equivalence(2)} and \textit{Terium non datur} are obviously exclusive which is why an exclusive-or $\veebar$ is ommited.
+}
 
 \end{document}
