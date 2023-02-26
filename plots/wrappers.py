@@ -97,15 +97,23 @@ class PltScene:
 				pos = annotation[1]
 				fontsize = annotation[2]
 				weight = annotation[3]
-	
+				# https://stackoverflow.com/questions/11545062/matplotlib-autoscale-axes-to-include-annotations	
+				"""
+				pyplot doesn't know where the text will be until after its drawn. Therefore, we need to draw the 
+				annotation, then resize the axis given the new information. Then, redraw with autoscale()
+   				"""
 				label = plt.annotate(text, xy=pos, fontsize=fontsize,
 					weight=weight, va='center', ha='center')
 				plt.draw()
+				# returns bbox bounding the text
 				bbox = label.get_window_extent()
+				# .transformed constructs a bbox using the data coordinates from the parameter
+				# axes.transData is the display coordinates of the axis
+				# .inverted() will take the display coordinates and turn them into data coordinates
 				bbox_data = bbox.transformed(self.local_ax.transData.inverted())
+				# update the xlim and ylim with the corners of the label bbox if the bbox is outside the current datalim
 				self.local_ax.update_datalim(bbox_data.corners())
 				plt.autoscale()
-				print('nicetry')
 
 	def dot(self, x, y, color='r', size=5.0):
 		plt.plot(x, y, marker='o', markerfacecolor=color,
