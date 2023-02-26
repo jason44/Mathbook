@@ -85,7 +85,7 @@ A \textbf{logical connective} in propositional logic expresses a binary relation
         \item Disjunction $\vee$\\
             In english, \textit{or} can denote a disjunction.
         \item Exclusive Disjunction $\veebar$\\
-            In english, either$\dots$or$\dots$ can denote that two propositions that are connected by a disjunction are mutually exclusive.
+            In english, ``either$\dots$or`` statements can denote that two propositions that are connected by a disjunction are mutually exclusive.
         \item Negation $\neg$\\
             In english, \textit{not} denotes a negation.
         \item Conditional $\rightarrow$\\
@@ -349,6 +349,13 @@ Where $(x=0, y=0)$ is the only solution that exists.
 
 Often times when solving for points of intersection between two or more equations, the given equations are already in y-intercept form. If that it the case, then solving the system becomes trivial. Because $y$ is a function of $x$ , that is $f: X \rightarrow Y$, for all equations in y-intercept form, if you let the equations equal each other you can then solve for the independent variable rather easily and the value for the dependent variable follows.
 
+\subsubsection{Tips for Solving Systems}
+\begin{enumerate}
+    \item \textbf{Elimination}, the process of isolating a variable in one equation so that the same variable can be substituted into another equation.
+    \item \textbf{Addition}, the process of adding two equations together such that it eliminates a variable.
+\end{enumerate}
+
+
 \subsection{Quadratics}
 
 \hspace{\parindent}A polynomial is an equation with unknowns where the only operations that it can include are multiplication, addition and subtraction.
@@ -549,9 +556,11 @@ $a^2+2ab+b^2=c^2+2ab$\\
 $a^2+b^2=c^2$
 }
 
+
+
 \subsection{Problems}
 \qs{}{
-Given two points $P, Q$ and an arbitrary point $R$. The distance $\overline{PR}$ and $\overline{QR}$ are equal \textit{iff} $R$ lies in the perpendicular bisector of $\overline{PQ}$.
+Given two points $P, Q$ and an arbitrary point $R$, Show that the line segments $\overline{PR}$ and $\overline{QR}$ are equal \textit{iff} $R$ lies in the perpendicular bisector of $\overline{PQ}$.
 }
 
 \newpage
@@ -650,7 +659,12 @@ Since the factors of $n!$ has at least one even number, $n!$ is even.
 \section{Geometry}
 
 \as{}{
-Given two points $P, Q$ and an arbitrary point $R$. The distance $\overline{PR}$ and $\overline{QR}$ are equal \textit{iff} $R$ lies in the perpendicular bisector of $\overline{PQ}$.
+Given two points $P, Q$ and an arbitrary point $R$. The line segments $\overline{PR}$ and $\overline{QR}$ are equal \textit{iff} $R$ lies in the perpendicular bisector of $\overline{PQ}$.
+
+Notice that if $R$ lies on the perpendicular bisector of $\overline{PQ}$, then
+the perpendicular bisector $\overline{MR}$, where $M$ is a point that divides $QR$, divides the triangle formed by $\overline{PR}$, $\overline{QR}$ and $\overline{PQ}$ into two right triangles by definition of a perpendicular bisector.
+
+We can then use the pythagoren theorem to see that the $\overline{PQ}^2+\overline{MR}^2=\overline{PR}^2=\overline{QR}^2$. Thus, $\overline{PR}=\overline{QR}$.
 }
 
 

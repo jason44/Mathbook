@@ -3,15 +3,41 @@ import matplotlib.pyplot as plt
 import matplotlib.axes as axes
 import matplotlib.patches as patches
 
+RIGHT = 2.0 + 0j
+LEFT = -2.0 + 0j
+UP = 0 + 2.0j
+DOWN = 0 - 2.0j
+
 class PltPolygon:
-	def __init__(self, color=[0,0,0], fill=True, fill_alpha=0.5):
+	def __init__(self, color=[0,0,0], fill=True, fill_alpha=0.2):
 		self.color = color
 		self.fill = fill
 		self.fill_alpha = fill_alpha
-  
-	def shape(self, xs, ys):
-		self.xs = xs
-		self.ys = ys
+	
+	"""
+ 	coordinates: list(list(x, y))
+	"""
+	def shape(self, coordinates):
+		# close the shape just in case it is not yet closed
+		coordinates.append(coordinates[0])
+		self.xs, self.ys = zip(*coordinates)
+	
+	# specify the vertice by index
+	# add direction enums together to produce the desired offset
+	# _scaling may need to be adjusted depending on the figure
+	def annotate_point(self, text, vertex, offset=RIGHT+LEFT, _scaling=1.0, fontsize=13, weight='bold'):
+		if vertex > (len(self.xs) - 1):
+			return ValueError
+		real = offset.real
+		imag_coeff = (offset.imag * -1j).real
+		pos = (self.xs[vertex]+(real*_scaling), self.ys[vertex]+(imag_coeff*_scaling))
+		annotation_info = (
+			text,
+			pos,
+			fontsize,
+			weight
+		)
+		self.annotations.append(annotation_info)			
 
 class PltRectangle(PltPolygon):
 	def __init__(self, center=(0, 0), x=1, y=1, color=[0,0,0], fill=True, fill_alpha=0.5):
@@ -24,7 +50,7 @@ class PltRectangle(PltPolygon):
 # borders and figure scaline are broken until we can make 
 class PltScene:	
 	def __init__(self, xrange=(0, 10), yrange=(0, 10), border_color='#ffffff', border_linewidth=0.0, 
-    			hscale=1.0, vscale=1.0):
+    		hscale=1.0, vscale=1.0):
 		self.border_color = border_color
 		self.border_linewidth = border_color
 		self.hscale = hscale
@@ -50,7 +76,13 @@ class PltScene:
 			if polygon.fill:
 				plt.fill(polygon.xs, polygon.ys, facecolor=(polygon.color[0], 
 					polygon.color[1], polygon.color[2], polygon.fill_alpha))
-	
+			for annotation in polygon.annotations:
+				text = annotation[0]
+				pos = annotation[1]
+				fontsize = annotation[2]
+				weight = annotation[3]
+				plt.annotate(text, xy=pos, fontsize=fontsize, weight=weight, va='center', ha='center')
+
 	def dot(self, x, y, color='r', size=5.0):
 		plt.plot(x, y, marker='o', markerfacecolor=color, markeredgecolor=color, markersize=size)
 	
