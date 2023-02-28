@@ -10,11 +10,12 @@ DOWN = 0 - 2.0j
 
 
 class PltPolygon:
-	def __init__(self, color=[0, 0, 0], fill=True, fill_alpha=0.2, lw=1.0):
+	def __init__(self, color=[0, 0, 0], fill=True, fill_alpha=0.2, lw=1.0, ls='-'):
 		self.color = color
 		self.fill = fill
 		self.fill_alpha = fill_alpha
 		self.lw = lw
+		self.ls = ls
 		self.annotations = []
 	"""
  	coordinates: list(list(x, y))
@@ -87,7 +88,7 @@ class PltScene:
 
 	def plot(self):
 		for polygon in self.polygons:
-			plt.plot(polygon.xs, polygon.ys, lw=polygon.lw,
+			plt.plot(polygon.xs, polygon.ys, lw=polygon.lw, ls=polygon.ls,
 					 color=(polygon.color[0], polygon.color[1], polygon.color[2]))
 			if polygon.fill:
 				plt.fill(polygon.xs, polygon.ys, facecolor=(polygon.color[0],

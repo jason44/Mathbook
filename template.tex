@@ -511,7 +511,7 @@ If the rays $A$ and $B$ were to lie on each other, then either $\angle AB = 0$ o
 \dfn{}{
 \begin{itemize}
     \item A triangle is a \textbf{right triangle} \textit{iff} the \textbf{legs} of the triangle make a right angle. A right angle is $90 \degree$ or $\frac{\pi}{2}$ radians. The legs are two segments $\overline{PQ}$ and $\overline{PM}$ that make up the right angle. Furthermore, $\overline{PQ}$ and $\overline{PM}$ are \textbf{perpendicular} with each other. The third side of a right triangle, $\overline{QM}$, is called the \textbf{hypotenuse}.
-    \item In general, a line is perpendicular with another line if their intersection forms a right angle.
+    \item A line is perpendicular with another line if their intersection forms a right angle.
     \item Lines are \textbf{parallel} with each other if they never intersect.
 \end{itemize}
 }\bigskip
@@ -526,7 +526,7 @@ Intuitively, we can suppose that two segments of two parallel lines are parallel
 
 The length of the legs is all that is necessary in order to show congruence. If the lengths of the legs are equal, it follows that the third side is equal for both triangles as we will show with the Pythagorean theorem later. Furthermore, the area of both triangles is equal and the angles of both triangles is also equal.\medskip
 
-\thm{}{The area of a right triangle is given by $\frac{ab}{2}$ where $a$ and $b$ are the legs of the right triangle.
+\mprop{}{The sum of the angles of a right triangle other than the right triangle sum up to $90 \degree$ or $\frac{\pi}{2}$.
 }
 
 Consider a rectangle formed by points $A,B,C,D$.
@@ -537,7 +537,14 @@ Consider a rectangle formed by points $A,B,C,D$.
     \includegraphics[width=0.45\textwidth]{rect.pdf}
 \end{figure}
 
-Notice that parallel segments $\overline{AC}$ and $\overline{BD}$ are equal in length. Likewise, $\overline{AB}$ and $\overline{CD}$ are also equal in length. $\overline{AD}$ divides the rectangle into two right triangles. By \textbf{3.2.3} we know that the two right triangles that make up the rectangle are congruent by our assertion that parallel segments of a rectangle are equal in length. Assuming that area of the rectangle is given by $A=ab$ where $a$ is the length of the segment $\overline{AB}$ and $b$ is the length of $\overline{AC}$ we can say that the two triangles are congruent. Furthermore, the area of one triangle is half the area of the rectangle.
+
+Notice that parallel segments $\overline{AC}$ and $\overline{BD}$ are equal in length. Likewise, $\overline{AB}$ and $\overline{CD}$ are also equal in length. $\overline{AD}$ divides the rectangle into two right triangles. By \textbf{3.9.3} we know that the two right triangles that make up the rectangle are congruent by our assertion that parallel segments of a rectangle are equal in length.
+
+\thm{}{The area of a right triangle is given by $\frac{ab}{2}$ where $a$ and $b$ are the legs of the right triangle.
+}
+
+
+Assuming that area of the rectangle is given by $A=ab$ where $a$ is the length of the segment $\overline{AB}$ and $b$ is the length of $\overline{AC}$ we can say that the two triangles are congruent. Furthermore, the area of one triangle is half the area of the rectangle.
 
 \thm{Pythagorean Theorem}{
     Suppose that $a$ and $b$ are the lengths of the legs of a triangle and $c$ is the length of the hypotenuse. Then $a^2+b^2=c^2$.
@@ -556,11 +563,25 @@ $a^2+2ab+b^2=c^2+2ab$\\
 $a^2+b^2=c^2$
 }
 
-
-
 \subsection{Problems}
+\dfn{}{
+\begin{itemize}
+    \item A \textbf{perpendicular bisector} is a line perpendicular to a segment and whose endpoint lie on the middle of the segment.
+    \item An \textbf{angle bisector} is a line that bisects the angle.
+    \item An \textbf{altitude} of a triangle is a line perpendicular to an edge and whose endpoint lie on a vertex.
+\end{itemize}
+
+}
 \qs{}{
 Given two points $P, Q$ and an arbitrary point $R$, Show that the line segments $\overline{PR}$ and $\overline{QR}$ are equal \textit{iff} $R$ lies in the perpendicular bisector of $\overline{PQ}$.
+}
+
+\qs{}{
+Prove that the sum of angles of a triangle equal $180 \degree$.
+}
+
+\qs{}{
+Prove that the area of a generic triangle is equal to half its base times height. $A=\frac{bh}{2}$.
 }
 
 \newpage
@@ -661,13 +682,29 @@ Since the factors of $n!$ has at least one even number, $n!$ is even.
 \as{}{
 Given two points $P, Q$ and an arbitrary point $R$. The line segments $\overline{PR}$ and $\overline{QR}$ are equal \textit{iff} $R$ lies in the perpendicular bisector of $\overline{PQ}$.
 
+\begin{center}
+    \includegraphics[width=0.35\textwidth]{congruent_triangles.pdf}
+\end{center}
+
 Notice that if $R$ lies on the perpendicular bisector of $\overline{PQ}$, then
 the perpendicular bisector $\overline{MR}$, where $M$ is a point that divides $QR$, divides the triangle formed by $\overline{PR}$, $\overline{QR}$ and $\overline{PQ}$ into two right triangles by definition of a perpendicular bisector.
 
-We can then use the pythagoren theorem to see that the $\overline{PQ}^2+\overline{MR}^2=\overline{PR}^2=\overline{QR}^2$. Thus, $\overline{PR}=\overline{QR}$.
+We can then use the pythagoren theorem to see that the $\overline{PM}^2+\overline{MR}^2=\overline{MQ}^2+\overline{MR}^2=\overline{PR}^2=\overline{QR}^2$. Thus, $\overline{PR}=\overline{QR}$.
+
+The converse follows from the pythagorean theorem.\\
+$\overline{MR}^2 + b^2 = \overline{PR}=\overline{QR}$\\
+Thus, $\overline{PM} = \overline{MQ}$. Which proves that $M$ bisects $\overline{PQ}$.
 }
 
+\as{}{
+Prove that the sum of angles of a triangle equal $180 \degree$.
+}
 
+\as{}{
+Prove that the area of a generic triangle is equal to half its base times height. $A=\frac{bh}{2}$.
+
+\hspace{\parindent}We begin by splitting the triangle into two right triangles. We draw a line perpendicular to an edge that has a point on a vertex. The area of each right triangle is $\frac{b_1 h}{2}$ and $\frac{b_2 h}{2}$. The area of the whole triangle is $\frac{b_1 h}{2} + \frac{b_2 h}{2}$, or $\frac{h(b_1+b_2)}{2}=\frac{bh}{2}$.
+}
 \iffalse
 \textit{axiom of pairing} states that given a set $A$ and $B$, there is a set $D$ that contains $A$ and $B$. In set notation, $\forall A \forall B \exists D \ni ((A \in D) \wedge (B \in D))$.%%%
 \fi

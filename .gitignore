@@ -2,3 +2,4 @@ plots/*.pdf
 plots/__pycache__/
 plots/*.swp
 *.swp
+/VDraw/target
