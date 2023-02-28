@@ -182,11 +182,6 @@ inline double vec2_dot(const vec2 u, const vec2 v)
 	return (u.x * v.x) + (u.y * v.y);
 }
 
-inline double vec2_cross(const vec2 u, const vec2 v)
-{
-	return u.x;		
-}
-
 /*********** FREE THE ALLOCATED ARRAY ***********/
 void polygon_calculate_edges(Polygon *poly, Edge *edges)
 {
