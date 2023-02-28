@@ -10,7 +10,11 @@
 
 // -lgsl -lgslcblas
 // clang main.c -lcairo -lm 
+/*
+gcc main.c -lcairo -lm 
+*/
 
+#define IMAGE_COORDINATTES
 
 typedef struct {
 	float r, g, b, a;
@@ -65,6 +69,20 @@ typedef struct Polygon {
 } Polygon;
 
 
+#ifdef IMAGE_COORDINATTES
+// TODO: create a coordinate system centered around the origin of the image
+inline void vec2_to_image_coordinates(double image_width, double image_height, 
+	vec2 *verticies, const size_t vertex_count)	
+{
+	image_width /= 2;
+	image_height /= 2;
+	for (size_t i = 0; i < vertex_count; i++) {
+		verticies[i].x = verticies[i].x + image_width;
+		verticies[i].y = (verticies[i].y + image_height) -1;
+	}
+}
+#endif
+
 void vdraw_create(VDrawContext *ctx)
 {
 	/*
@@ -86,7 +104,7 @@ void vdraw_create(VDrawContext *ctx)
 }
 
 
-inline void vdraw_destroy(VDrawContext *ctx)
+void vdraw_destroy(VDrawContext *ctx)
 {
 	cairo_destroy(ctx->cr);	
 	cairo_surface_destroy(ctx->surface);
@@ -101,10 +119,11 @@ inline void vdraw_save(VDrawContext *ctx)
 */
 void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
 {
-	assert(poly->vertices);
-	assert(poly->vertex_count);
+	if (!poly->vertices || !poly->vertex_count) {
+		vdraw_destroy(ctx);
+		exit(EXIT_FAILURE);
+	}
 	cairo_t *cr = ctx->cr;
-
 	RGBA c;
 	if (poly->color.r) c = &poly->color;
 	// C is awesome haha...
@@ -124,6 +143,8 @@ void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
 	vec2 *vertices = poly->vertices;
 	size_t vertex_count = poly->vertex_count;
 
+	vec2_to_image_coordinates(ctx->width, ctx->height, vertices, vertex_count);
+
 	// close the polygon even if its already closed
 	vec2 buf[vertex_count+1];
 	vertices = buf;
@@ -134,10 +155,12 @@ void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
 		memcpy(vertices, poly->vertices, sizeof(vec2)*(vertex_count));
 		vertices[vertex_count] = (vec2){vertices[0].x, vertices[0].y};
 	}
+
 	cairo_move_to(cr, vertices[0].x, vertices[0].y);
 	for (size_t i = 1; i < poly->vertex_count; i++) {
 		cairo_line_to(cr, vertices[i].x, vertices[i].y);			
 	}
+
 	cairo_stroke(cr);
 	if (poly->fill) {
 		cairo_set_source_rgba(cr, c[0], c[1], c[2], 0.1);
@@ -165,7 +188,7 @@ void polygon_calculate_edges_as_vectors(Polygon *poly, vec2 *edges)
 int main(int argc, char** argv) 
 {
 	const size_t vertex_count = 3;
-	vec2 vertices[vertex_count] = {
+	vec2 vertices[] = {
 		{0.0, 0.0},
 		{5.0, 5.0},
 		{5.0, 2.0}
@@ -190,3 +213,8 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+
+/*
+ * TODO: keep track of the vertices that extend the farthest past the origin 
+ * so we can crop the final image with that information
+ */
