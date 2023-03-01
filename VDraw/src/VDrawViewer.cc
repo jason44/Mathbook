@@ -33,6 +33,8 @@ VDrawViewer::VDrawViewer(const std::string &filename)
 	doc = poppler::document::load_from_file(filename);
 	if (!doc) exit(EXIT_FAILURE);
 
+	
+
 }
 
 VDrawViewer::~VDrawViewer() 

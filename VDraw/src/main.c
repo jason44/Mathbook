@@ -5,13 +5,14 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 #include <cairo/cairo.h>
 #include <cairo/cairo-pdf.h>
 
 // -lgsl -lgslcblas
 // clang main.c -lcairo -lm 
 /*
-gcc main.c -lcairo -lm 
+gcc main.c -lcairo -lm -Wall -O2
 */
 
 #define IMAGE_COORDINATTES
@@ -20,6 +21,9 @@ typedef struct {
 	float r, g, b, a;
 } RGBA_t;
 
+#define V_I (vec2){1.0, 0.0}
+#define V_J (vec2){0.0, 1.0}
+
 typedef float* RGBA;
 
 struct VDrawSettings {
@@ -27,16 +31,6 @@ struct VDrawSettings {
 	cairo_line_cap_t linecap;
 	cairo_line_join_t linejoin;
 };
-
-#define VDRAW_STYLE_POLYGON CAIRO_FILL_RULE_WINDING,CAIRO_LINE_CAP_ROUND,CAIRO_LINE_JOIN_ROUND
-inline void vdraw_set_style(VDrawContext *ctx, const cairo_fill_rule_t fill, 
-	const cairo_line_cap_t linecap, const cairo_line_join_t linejoin)
-{
-	cairo_set_fill_rule(ctx->cr, fill);
-	cairo_set_line_cap(ctx->cr, linecap);
-	cairo_set_line_join(ctx->cr, linejoin);
-}
-
 
 typedef struct VDrawContext {
 	cairo_surface_t *surface;
@@ -83,9 +77,14 @@ typedef struct Polygon {
 } Polygon;
 
 
+inline double vec2_dot(const vec2 u, const vec2 v) 
+{
+	return (u.x * v.x) + (u.y * v.y);
+}
+
 #ifdef IMAGE_COORDINATTES
 // TODO: create a coordinate system centered around the origin of the image
-inline void vec2_to_image_coordinates(double image_width, double image_height, 
+void vec2_to_image_coordinates(double image_width, double image_height, 
 	vec2 *verticies, const size_t vertex_count)	
 {
 	image_width /= 2.0;
@@ -96,6 +95,43 @@ inline void vec2_to_image_coordinates(double image_width, double image_height,
 	}
 }
 #endif
+
+/*********** FREE THE ALLOCATED ARRAY ***********/
+void polygon_calculate_edges(Polygon *poly, Edge *edges)
+{
+	assert(poly->vertices[1].x);
+	for (size_t i = 1; i < poly->vertex_count; i ++) {
+		edges[i] = (Edge){poly->vertices[i], poly->vertices[i-1]
+		};	
+	}
+}
+
+/*********** FREE THE ALLOCATED ARRAY ***********/
+size_t polygon_calculate_edges_as_vectors(Polygon *poly, size_t *edge_count)
+{
+	assert(poly->vertices[1].x);
+
+	// close the polygon unless it is already closed
+	vec2 *vertices = poly->vertices;
+	size_t vertex_count = poly->vertex_count;
+	vec2 buf[vertex_count+1];
+	if (vertices[0].x != vertices[vertex_count-1].x &&
+		vertices[0].y != vertices[vertex_count-1].y) {
+		memcpy(buf, vertices, sizeof(vec2)*(vertex_count));
+		buf[vertex_count] = (vec2){vertices[0].x, vertices[0].y};
+		vertices = buf;
+		++vertex_count;
+	}
+
+	vec2 *edges = malloc(sizeof(vec2)*(vertex_count-1));
+	for (size_t i = 1; i < poly->vertex_count; i++) {
+		edges[i] = (vec2){poly->vertices[i].x - poly->vertices[i-1].x, 
+			poly->vertices[i].y - poly->vertices[i-1].y
+		};	
+	}
+	*edge_count = vertex_count-1;
+	return edges;
+}
 
 void vdraw_create(VDrawContext *ctx)
 {
@@ -119,7 +155,6 @@ void vdraw_create(VDrawContext *ctx)
 	cairo_paint(ctx->cr);	
 }
 
-
 void vdraw_destroy(VDrawContext *ctx)
 {
 	cairo_destroy(ctx->cr);	
@@ -131,20 +166,28 @@ inline void vdraw_save(VDrawContext *ctx)
 	cairo_show_page(ctx->cr);
 }
 
-/*
-*/
-
+#define VDRAW_STYLE_POLYGON CAIRO_FILL_RULE_WINDING,CAIRO_LINE_CAP_ROUND,CAIRO_LINE_JOIN_ROUND
+void vdraw_set_style(VDrawContext *ctx, const cairo_fill_rule_t fill, 
+	const cairo_line_cap_t linecap, const cairo_line_join_t linejoin)
+{
+	cairo_set_fill_rule(ctx->cr, fill);
+	cairo_set_line_cap(ctx->cr, linecap);
+	cairo_set_line_join(ctx->cr, linejoin);
+}
 
 void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
 {
-	if (!poly->vertices || !poly->vertex_count) {
-		vdraw_destroy(ctx);
-		exit(EXIT_FAILURE);
+	if (!poly->vertices || !poly->vertex_count) goto ERROR_EXIT;
+
+	if (poly->vertices[0].x != poly->vertices[poly->vertex_count-1].x || 
+		poly->vertices[0].y != poly->vertices[poly->vertex_count-1].y) {
+		puts("Polygon shape is not closed");
+		goto ERROR_EXIT;
 	}
+
 	cairo_t *cr = ctx->cr;
 	RGBA c;
 	if (poly->color.r) c = &poly->color;
-	// C is awesome haha...
 	else c = (RGBA)(&(RGBA_t){0.0, 0.0, 0.0, 1.0});
 	cairo_set_source_rgba(cr, c[0], c[1], c[2], c[3]);
 
@@ -158,11 +201,9 @@ void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
 		cairo_set_dash(cr, dashes, 2, -10.0);
 	}
 
-	vec2 *vertices = poly->vertices;
-	size_t vertex_count = poly->vertex_count;
+	vec2_to_image_coordinates(ctx->width, ctx->height, poly->vertices, poly->vertex_count);
 
-	vec2_to_image_coordinates(ctx->width, ctx->height, vertices, vertex_count);
-
+	/*
 	// close the polygon unless it is already closed
 	vec2 buf[vertex_count+1];
 	if (vertices[0].x != vertices[vertex_count-1].x &&
@@ -174,6 +215,9 @@ void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
 		vertices = buf;
 		++vertex_count;
 	}
+	*/
+	vec2 *vertices = poly->vertices;
+	size_t vertex_count = poly->vertex_count;
 
 	for (size_t k = 0; k < vertex_count; k++) printf("(%f, %f)\n", vertices[k].x, vertices[k].y);	
 	puts("--------------");
@@ -189,59 +233,93 @@ void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
 		cairo_set_source_rgba(cr, c[0], c[1], c[2], 0.2);
 		cairo_fill(cr);
 	} else cairo_stroke(cr);
-}
 
-inline double vec2_dot(const vec2 u, const vec2 v) 
-{
-	return (u.x * v.x) + (u.y * v.y);
-}
+	return;
 
-/*********** FREE THE ALLOCATED ARRAY ***********/
-void polygon_calculate_edges(Polygon *poly, Edge *edges)
-{
-	assert(poly->vertices[1].x);
-	for (size_t i = 1; i < poly->vertex_count; i ++) {
-		edges[i] = (Edge){poly->vertices[i], poly->vertices[i-1]
-		};	
+	ERROR_EXIT: {
+		puts("EXIT_ERROR");
+		vdraw_destroy(ctx);
+		exit(EXIT_FAILURE);
 	}
 }
 
-/*********** FREE THE ALLOCATED ARRAY ***********/
-size_t polygon_calculate_edges_as_vectors(Polygon *poly, size_t *edge_count)
-{
-	assert(poly->vertices[1].x);
+// specify vertex by index
+void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex) {
+	if (!poly->vertices || !poly->vertex_count) goto ERROR_EXIT;
 
-	// close the polygon unless it is already closed
-	vec2 *vertices = poly->vertices;
-	size_t vertex_count = poly->vertex_count;
-	vec2 buf[vertex_count+1];
-	if (vertices[0].x != vertices[vertex_count-1].x &&
-		vertices[0].y != vertices[vertex_count-1].y) {
-		// TODO: Check if realloc is faster than using memcpy 
-		printf("vertex_count: %lu\n",vertex_count);
-		memcpy(buf, vertices, sizeof(vec2)*(vertex_count));
-		buf[vertex_count] = (vec2){vertices[0].x, vertices[0].y};
-		vertices = buf;
-		++vertex_count;
+	if (poly->vertices[0].x != poly->vertices[poly->vertex_count-1].x || 
+		poly->vertices[0].y != poly->vertices[poly->vertex_count-1].y) {
+		puts("Polygon shape is not closed");
+		goto ERROR_EXIT;
 	}
 
-	vec2 *edges = malloc(sizeof(vec2)*(vertex_count-1));
-	for (size_t i = 1; i < poly->vertex_count; i++) {
-		edges[i] = (vec2){poly->vertices[i].x - poly->vertices[i-1].x, 
-			poly->vertices[i].y - poly->vertices[i-1].y
-		};	
+	vdraw_set_style(ctx, VDRAW_STYLE_POLYGON);
+
+	// modify the color values
+	cairo_t *cr = ctx->cr;
+	RGBA c;
+	if (poly->color.r) c = &poly->color;
+	else c = (RGBA)(&(RGBA_t){0.0, 0.0, 0.0, 1.0});
+	cairo_set_source_rgba(cr, c[0], c[1], c[2], c[3]);
+
+	double lw;
+	if (poly->lw) lw = poly->lw * 0.30;
+	else lw = 0.09;
+	cairo_set_line_width(cr, lw);
+
+	vec2 R = poly->vertices[vertex];
+	// signed integers are very nice nice nice
+	vec2 P = poly->vertices[(vertex - 1) % (int)(poly->vertex_count)];
+	vec2 Q = poly->vertices[(vertex + 1) % (int)(poly->vertex_count-1)];
+	vec2 u = {P.x-R.x, P.y-R.y};
+	vec2 v = {Q.x-R.x, Q.y-R.y};
+
+	double dot_uv = vec2_dot(u, v);
+	double angle_uv = acos(dot_uv / ((sqrt(pow(u.x, 2) + pow(u.y, 2))) * (sqrt(pow(v.x, 2) + pow(v.y, 2)))));
+	printf("angle between u and x: %f\n", angle_uv);
+	if (dot_uv != 0) {
+		// angle between u and v in the right hand coordinate 
+		// system is less than 180
+		double dot_ux = vec2_dot(u, V_I);
+		double dot_vx = vec2_dot(v, V_I);
+
+		if (dot_ux < dot_vx) {
+			double proj_ux_m = vec2_dot(u, V_I);
+			vec2 proj_ux = {proj_ux_m*V_I.x, proj_ux_m*V_I.y};
+			double angle_ux = acos(dot_ux / ((sqrt(pow(u.x, 2) + pow(u.y, 2))) * (sqrt(pow(proj_ux.x, 2) + pow(proj_ux.y, 2)))));
+			printf("angle between u and x: %f\n", angle_ux);
+			cairo_arc(cr, R.x, R.y, (ctx->width+ctx->height)*0.03, M_PI_2 + angle_ux, M_PI_2 + angle_ux+angle_uv);
+		} else {
+			double proj_vx_m = vec2_dot(v, V_I);
+			vec2 proj_vx = {proj_vx_m*V_I.x, proj_vx_m*V_I.y};
+			double angle_vx = acos(dot_vx / ((sqrt(pow(v.x, 2) + pow(v.y, 2))) * (sqrt(pow(proj_vx.x, 2) + pow(proj_vx.y, 2)))));
+			printf("angle between u and x: %f\n", angle_vx);
+			cairo_arc(cr, R.x, R.y, (ctx->width+ctx->height)*0.03, M_PI_2 + angle_vx, M_PI_2 + angle_vx-angle_uv);
+		}
+	} else {
+		// perpendicular (right angle)
+		puts("I haven't defined this yet sir");
+	}  
+
+
+	cairo_stroke(cr);
+	return;
+
+	ERROR_EXIT: {
+		puts("OUTPUT_ERROR");
+		vdraw_destroy(ctx);
+		exit(EXIT_FAILURE);
 	}
-	&edge_count = vertex_count-1;
-	return edges;
 }
 
 int main(int argc, char** argv) 
 {
-	const size_t vertex_count = 3;
+	const size_t vertex_count = 4;
 	vec2 vertices[] = {
 		{0.0, 0.0},
 		{4.0, 4.0},
-		{4.0, -2.0}
+		{4.0, -2.0},
+		{0.0, 0.0}
 	};
 
 	Polygon poly = {
@@ -258,9 +336,16 @@ int main(int argc, char** argv)
 		.height = 10.0
 	};
 	vdraw_create(&ctx);
-	vdraw_calculate_edges_as_vectors(&poly, );
+	/*
+	size_t edge_count;
+	vdraw_calculate_edges_as_vectors(&poly, &edge_count);
+	*/
 	vdraw_polygon(&ctx, &poly);
 	puts("POLYGON");
+	vdraw_polygon_angle(&ctx, &poly, 1);
+	vdraw_polygon_angle(&ctx, &poly, 0);
+	vdraw_polygon_angle(&ctx, &poly, 2);
+	puts("ANGLE");
 	vdraw_save(&ctx);
 	puts("SAVE");
 	vdraw_destroy(&ctx);
