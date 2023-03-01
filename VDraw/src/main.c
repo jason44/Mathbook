@@ -22,6 +22,22 @@ typedef struct {
 
 typedef float* RGBA;
 
+struct VDrawSettings {
+	cairo_fill_rule_t fill;
+	cairo_line_cap_t linecap;
+	cairo_line_join_t linejoin;
+};
+
+#define VDRAW_STYLE_POLYGON CAIRO_FILL_RULE_WINDING,CAIRO_LINE_CAP_ROUND,CAIRO_LINE_JOIN_ROUND
+inline void vdraw_set_style(VDrawContext *ctx, const cairo_fill_rule_t fill, 
+	const cairo_line_cap_t linecap, const cairo_line_join_t linejoin)
+{
+	cairo_set_fill_rule(ctx->cr, fill);
+	cairo_set_line_cap(ctx->cr, linecap);
+	cairo_set_line_join(ctx->cr, linejoin);
+}
+
+
 typedef struct VDrawContext {
 	cairo_surface_t *surface;
 	cairo_t *cr;
@@ -31,13 +47,11 @@ typedef struct VDrawContext {
 } VDrawContext;
 
 typedef struct vec2 {
-	float x;
-	float y;
+	float x, y;
 } vec2;
 
 typedef struct Edge {
-	vec2 p;
-	vec2 q;
+	vec2 p, q;
 } Edge;
 
 /****************************
@@ -119,6 +133,8 @@ inline void vdraw_save(VDrawContext *ctx)
 
 /*
 */
+
+
 void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
 {
 	if (!poly->vertices || !poly->vertex_count) {
@@ -147,9 +163,8 @@ void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
 
 	vec2_to_image_coordinates(ctx->width, ctx->height, vertices, vertex_count);
 
-	// close the polygon even if its already closed
+	// close the polygon unless it is already closed
 	vec2 buf[vertex_count+1];
-
 	if (vertices[0].x != vertices[vertex_count-1].x &&
 		vertices[0].y != vertices[vertex_count-1].y) {
 		// TODO: Check if realloc is faster than using memcpy 
@@ -158,7 +173,6 @@ void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
 		buf[vertex_count] = (vec2){vertices[0].x, vertices[0].y};
 		vertices = buf;
 		++vertex_count;
-		puts("HELLO");
 	}
 
 	for (size_t k = 0; k < vertex_count; k++) printf("(%f, %f)\n", vertices[k].x, vertices[k].y);	
@@ -185,13 +199,40 @@ inline double vec2_dot(const vec2 u, const vec2 v)
 /*********** FREE THE ALLOCATED ARRAY ***********/
 void polygon_calculate_edges(Polygon *poly, Edge *edges)
 {
-	puts("Err");	
+	assert(poly->vertices[1].x);
+	for (size_t i = 1; i < poly->vertex_count; i ++) {
+		edges[i] = (Edge){poly->vertices[i], poly->vertices[i-1]
+		};	
+	}
 }
 
 /*********** FREE THE ALLOCATED ARRAY ***********/
-void polygon_calculate_edges_as_vectors(Polygon *poly, vec2 *edges)
+size_t polygon_calculate_edges_as_vectors(Polygon *poly, size_t *edge_count)
 {
-	puts("Err");	
+	assert(poly->vertices[1].x);
+
+	// close the polygon unless it is already closed
+	vec2 *vertices = poly->vertices;
+	size_t vertex_count = poly->vertex_count;
+	vec2 buf[vertex_count+1];
+	if (vertices[0].x != vertices[vertex_count-1].x &&
+		vertices[0].y != vertices[vertex_count-1].y) {
+		// TODO: Check if realloc is faster than using memcpy 
+		printf("vertex_count: %lu\n",vertex_count);
+		memcpy(buf, vertices, sizeof(vec2)*(vertex_count));
+		buf[vertex_count] = (vec2){vertices[0].x, vertices[0].y};
+		vertices = buf;
+		++vertex_count;
+	}
+
+	vec2 *edges = malloc(sizeof(vec2)*(vertex_count-1));
+	for (size_t i = 1; i < poly->vertex_count; i++) {
+		edges[i] = (vec2){poly->vertices[i].x - poly->vertices[i-1].x, 
+			poly->vertices[i].y - poly->vertices[i-1].y
+		};	
+	}
+	&edge_count = vertex_count-1;
+	return edges;
 }
 
 int main(int argc, char** argv) 
@@ -217,6 +258,7 @@ int main(int argc, char** argv)
 		.height = 10.0
 	};
 	vdraw_create(&ctx);
+	vdraw_calculate_edges_as_vectors(&poly, );
 	vdraw_polygon(&ctx, &poly);
 	puts("POLYGON");
 	vdraw_save(&ctx);
