@@ -15,6 +15,7 @@
 gcc main.c -lcairo -lm -Wall -O2
 */
 
+#define _V_DEBUG_
 #define IMAGE_COORDINATTES
 
 typedef struct {
@@ -261,7 +262,8 @@ void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
 }
 
 // specify vertex by index
-void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex) {
+void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex) 
+{
 	if (!poly->vertices || !poly->vertex_count) goto ERROR_EXIT;
 
 	if (poly->vertices[0].x != poly->vertices[poly->vertex_count-1].x || 
@@ -291,62 +293,71 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex) {
 	vec2 u = {P.x-R.x, P.y-R.y};
 	vec2 v = {Q.x-R.x, Q.y-R.y};
 
+	//cairo_new_path(cr);
+	//cairo_move_to(cr, R.x, R.y);
+
 	double dot_uv = vec2_dot(u, v);
-	double angle_uv = acos(dot_uv / ((vec2_length(u)) * (vec2_length(v))));
-	printf("angle between u and x: %f\n", angle_uv);
+	double angle_uv = acos(dot_uv/(vec2_length(u)*vec2_length(v)));
+	printf("angle between u and v: %f\n", angle_uv);
 	
 	// NOTE: acos only gives angles between 0 and PI
 	if (dot_uv != 0) {
 		// dot(u, v)//||u||||v|| always returns the smallest angle between the two 
+		double angle_from_x;
+
 		double det_xv = vec2_det(V_I, v);
 		double det_xu = vec2_det(V_I, u);
 		double dot_ux = vec2_dot(u, V_I);
 		double dot_vx = vec2_dot(v, V_I);
-		if (det_xu > 0) {
+
+	#ifdef _V_DEBUG_
+		printf("u = (%f, %f) v = (%f, %f)\n", u.x, u.y, v.x, v.y);
+		printf("dot_uv/(vec2_length(u)*vec2_length(v)): %f\n", dot_uv/(vec2_length(u)*vec2_length(v)));
+		printf("dot_ux/(vec2_length(u)*vec2_length(V_I): %f\n", dot_ux/(vec2_length(u)*vec2_length(V_I)));
+		printf("dot_vx/(vec2_length(v)*vec2_length(V_I): %f\n", dot_vx/(vec2_length(v)*vec2_length(V_I)));
+	#endif
+
+		if (det_xu >= 0) {
 			// u is to the right hand of x
 			double det_uv = vec2_det(u, v);
-			if (det_uv > 0) {
-				// v is to the right hand of u
-				double angle_xu = acos(dot_ux/(vec2_length(u)*vec2_length(V_I)));
-				cairo_arc(ctx->cr, R.x, R.y, angle_xu, angle_xu + angle_uv);
-			} else if (det_uv < 0) {
-				// v is to the left hand of u
-			} else {
-				// u and v are parallel 
-				if (dot_uv < 0) {
-					// angle between u and v is 180
-				} else {
-					// angle between u and v is 0
-				}
+			if (det_uv > 0) angle_from_x = acos(dot_ux/(vec2_length(u)*vec2_length(V_I))); // v is to the right hand of u
+			else if (det_uv < 0) angle_from_x = acos(dot_vx/(vec2_length(v)*vec2_length(V_I))); // v is to the left hand of u
+			else { // u and v are parallel 
+				if (dot_uv < 0) angle_from_x = acos(dot_ux/(vec2_length(u)*vec2_length(V_I))); // angle between u and v is 180
+				else return; // angle between u and v is 0
 			}
+			printf("POSITIVE: angle1: %f. angle2: %f\n", angle_from_x, angle_from_x - angle_uv);
+			cairo_arc(cr, R.x, R.y, (ctx->width+ctx->height)*0.03, angle_from_x, angle_from_x + angle_uv);
+			cairo_stroke(cr);
 		} else if (det_xu < 0) {
-			// x is to the left hand of u
-			double det_vu = vec2_det(v, u)
-			if (det_vu > 0) {
-				// u is to the right hand of v 
-			} else if (det_vu < 0) {
-				// u is to the left hand of v
-			} else {
+			// u is to the left hand of x
+			double det_vu = vec2_det(v, u);
+			if (det_vu > 0) angle_from_x = acos(dot_ux/(vec2_length(u)*vec2_length(V_I)))*-1; // u is to the right hand of v 
+			else if (det_vu < 0) angle_from_x = acos(dot_vx/(vec2_length(v)*vec2_length(V_I)))*-1; // u is to the left hand of v
+			else {
 				// u and v are parallel
-				if (dot_uv < 0) {
-					// angle between u and v is 180
-				}
+				if (dot_uv < 0) angle_from_x = acos(dot_ux/(vec2_length(u)*vec2_length(V_I)))*-1; // angle between u and v is 180
+				else return; // angle between u and v is 0
 			}
-		} else {
-			// u and v intersect at a right angle  	
-			size_t angle_vcount = 5;
-			vec2 angle_vertices[] = {
-				R, {P.x*0.1, P.y*0.1}, {(P.x+Q.x)*0.1, (P.y+Q.y)*0.1}, {Q.x*0.1, Q.y*0.1}, R
-			};
-			Polygon angle_poly = {
-				.vertices = angle_vertices,
-				.vertex_count = angle_vcount,
-				.lw = 0.05,
-				.color = {0.1, 0.1, 0.1, 1.0},
-				.fill = false
-			}
-			vdraw_polygon(ctx, &angle_poly);
+			printf("NEGATIVE: angle1: %f. angle2: %f\n", angle_from_x, angle_from_x - angle_uv);
+			cairo_arc_negative(cr, R.x, R.y, (ctx->width+ctx->height)*0.03, angle_from_x, angle_from_x-angle_uv);
+			cairo_stroke(cr);
 		}
+	} else {
+		// u and v intersect at a right angle  	
+		size_t angle_vcount = 5;
+		vec2 angle_vertices[] = {
+			R, {P.x*0.1, P.y*0.1}, {(P.x+Q.x)*0.1, (P.y+Q.y)*0.1}, {Q.x*0.1, Q.y*0.1}, R
+		};
+		Polygon angle_poly = {
+			.vertices = angle_vertices,
+			.vertex_count = angle_vcount,
+			.lw = 0.05,
+			.color = {0.1, 0.1, 0.1, 1.0},
+			.fill = false
+		};
+		vdraw_polygon(ctx, &angle_poly);
+	}
 	
 		/*
 		if (dot_ux < dot_vx) {
@@ -366,19 +377,16 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex) {
 		// perpendicular (right angle)
 		puts("I haven't defined this yet sir");
 	} */ 
-
-
-	cairo_stroke(cr);
 	return;
 
 	ERROR_EXIT: {
-		puts("OUTPUT_ERROR");
+		puts("OUTPUT ERROR");
 		vdraw_destroy(ctx);
 		exit(EXIT_FAILURE);
 	}
 }
 
-int main(int argc, char** argv) 
+int main(int argc, char* argv[])
 {
 	const size_t vertex_count = 4;
 	vec2 vertices[] = {
