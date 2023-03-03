@@ -82,7 +82,7 @@ inline double vec2_dot(const vec2 u, const vec2 v)
 	return (u.x * v.x) + (u.y * v.y);
 }
 
-inline vec2_length(const vec2 u)
+inline double vec2_length(const vec2 u)
 {
 	return sqrt(pow(u.x, 2) + pow(u.y, 2));
 }
@@ -97,11 +97,10 @@ if det(u, v) is negative, then v is to the left hand of u
 *********************************************/
 inline double vec2_det(const vec2 u, const vec2 v)
 {
-	return (u.x * v.y) - (u.y - v.x);
+	return (u.x * v.y) - (u.y * v.x);
 }
 
 #ifdef IMAGE_COORDINATTES
-// TODO: create a coordinate system centered around the origin of the image
 void vec2_to_image_coordinates(double image_width, double image_height, 
 	vec2 *verticies, const size_t vertex_count)	
 {
@@ -151,6 +150,13 @@ size_t polygon_calculate_edges_as_vectors(Polygon *poly, size_t *edge_count)
 	return edges;
 }
 
+void polygon_remove_closing_point(Polygon *poly) {
+	if (poly->vertices[0].x == poly->vertices[poly->vertex_count-1].x &&
+		poly->vertices[0].y == poly->vertices[poly->vertex_count-1].y) {
+		--poly->vertex_count;
+	}
+}
+
 void vdraw_create(VDrawContext *ctx)
 {
 	/*
@@ -197,11 +203,7 @@ void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
 {
 	if (!poly->vertices || !poly->vertex_count) goto ERROR_EXIT;
 
-	if (poly->vertices[0].x != poly->vertices[poly->vertex_count-1].x || 
-		poly->vertices[0].y != poly->vertices[poly->vertex_count-1].y) {
-		puts("Polygon shape is not closed");
-		goto ERROR_EXIT;
-	}
+	polygon_remove_closing_point(poly);
 
 	cairo_t *cr = ctx->cr;
 	RGBA c;
@@ -221,19 +223,6 @@ void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
 
 	vec2_to_image_coordinates(ctx->width, ctx->height, poly->vertices, poly->vertex_count);
 
-	/*
-	// close the polygon unless it is already closed
-	vec2 buf[vertex_count+1];
-	if (vertices[0].x != vertices[vertex_count-1].x &&
-		vertices[0].y != vertices[vertex_count-1].y) {
-		// TODO: Check if realloc is faster than using memcpy 
-		printf("vertex_count: %lu\n",vertex_count);
-		memcpy(buf, vertices, sizeof(vec2)*(vertex_count));
-		buf[vertex_count] = (vec2){vertices[0].x, vertices[0].y};
-		vertices = buf;
-		++vertex_count;
-	}
-	*/
 	vec2 *vertices = poly->vertices;
 	size_t vertex_count = poly->vertex_count;
 
@@ -244,6 +233,8 @@ void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
 	for (size_t i = 1; i < vertex_count; i++) {
 		cairo_line_to(cr, vertices[i].x, vertices[i].y);			
 	}
+	// close the polygon 
+	cairo_line_to(cr, vertices[0].x, vertices[0].y);
 
 	// preserve the path so cairo knows what to fill
 	if (poly->fill) {
@@ -265,13 +256,9 @@ void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
 void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex) 
 {
 	if (!poly->vertices || !poly->vertex_count) goto ERROR_EXIT;
+	if (vertex >= poly->vertex_count) goto ERROR_EXIT;
 
-	if (poly->vertices[0].x != poly->vertices[poly->vertex_count-1].x || 
-		poly->vertices[0].y != poly->vertices[poly->vertex_count-1].y) {
-		puts("Polygon shape is not closed");
-		goto ERROR_EXIT;
-	}
-
+	polygon_remove_closing_point(poly);
 	vdraw_set_style(ctx, VDRAW_STYLE_POLYGON);
 
 	// modify the color values
@@ -288,10 +275,26 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex)
 
 	vec2 R = poly->vertices[vertex];
 	// signed integers are very nice nice nice
-	vec2 P = poly->vertices[(vertex - 1) % (int)(poly->vertex_count)];
-	vec2 Q = poly->vertices[(vertex + 1) % (int)(poly->vertex_count-1)];
+	vec2 P;
+	if (vertex-1 < 0) P = poly->vertices[poly->vertex_count-1];
+	else P = poly->vertices[vertex-1];
+	vec2 Q;
+	if (vertex+1 == poly->vertex_count) Q = poly->vertices[0];
+	else Q = poly->vertices[vertex+1];
+	//vec2 P = poly->vertices[(vertex - 1) & (int)(poly->vertex_count)-1];
+	//vec2 Q = poly->vertices[(vertex + 1) % (int)(poly->vertex_count)];
 	vec2 u = {P.x-R.x, P.y-R.y};
 	vec2 v = {Q.x-R.x, Q.y-R.y};
+
+#ifdef _V_DEBUG_
+	puts("_____________________");
+	printf("INDEX: %i | (%f, %f)\n", vertex, R.x, R.y);
+	for (size_t i = 0; i < poly->vertex_count; i++) {
+		printf("vertex %lu: (%f, %f)\n", i, poly->vertices[i].x, poly->vertices[i].y);
+	}
+	puts("_____________________");
+	printf("R(%f, %f) | P(%f, %f) | Q(%f, %f)\n", R.x, R.y, P.x, P.y, Q.x, Q.y);
+#endif
 
 	//cairo_new_path(cr);
 	//cairo_move_to(cr, R.x, R.y);
@@ -303,8 +306,6 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex)
 	// NOTE: acos only gives angles between 0 and PI
 	if (dot_uv != 0) {
 		// dot(u, v)//||u||||v|| always returns the smallest angle between the two 
-		double angle_from_x;
-
 		double det_xv = vec2_det(V_I, v);
 		double det_xu = vec2_det(V_I, u);
 		double dot_ux = vec2_dot(u, V_I);
@@ -317,30 +318,39 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex)
 		printf("dot_vx/(vec2_length(v)*vec2_length(V_I): %f\n", dot_vx/(vec2_length(v)*vec2_length(V_I)));
 	#endif
 
+		double angle_from_x = 0;
 		if (det_xu >= 0) {
 			// u is to the right hand of x
 			double det_uv = vec2_det(u, v);
 			if (det_uv > 0) angle_from_x = acos(dot_ux/(vec2_length(u)*vec2_length(V_I))); // v is to the right hand of u
-			else if (det_uv < 0) angle_from_x = acos(dot_vx/(vec2_length(v)*vec2_length(V_I))); // v is to the left hand of u
+			else if (det_uv < 0 && det_xv >= 0) angle_from_x = acos(dot_vx/(vec2_length(v)*vec2_length(V_I))); // v is to the left hand of u but to the right hand of x
+			else if (det_uv < 0 && det_xv < 0) angle_from_x = acos(dot_vx/(vec2_length(v)*vec2_length(V_I)))*-1; // v is to the left hand of u and x
 			else { // u and v are parallel 
 				if (dot_uv < 0) angle_from_x = acos(dot_ux/(vec2_length(u)*vec2_length(V_I))); // angle between u and v is 180
 				else return; // angle between u and v is 0
 			}
-			printf("POSITIVE: angle1: %f. angle2: %f\n", angle_from_x, angle_from_x - angle_uv);
+			printf("POSITIVE: angle1: %f. angle2: %f\n", angle_from_x, angle_from_x + angle_uv);
 			cairo_arc(cr, R.x, R.y, (ctx->width+ctx->height)*0.03, angle_from_x, angle_from_x + angle_uv);
 			cairo_stroke(cr);
 		} else if (det_xu < 0) {
 			// u is to the left hand of x
 			double det_vu = vec2_det(v, u);
-			if (det_vu > 0) angle_from_x = acos(dot_ux/(vec2_length(u)*vec2_length(V_I)))*-1; // u is to the right hand of v 
-			else if (det_vu < 0) angle_from_x = acos(dot_vx/(vec2_length(v)*vec2_length(V_I)))*-1; // u is to the left hand of v
+			if (det_vu < 0 && det_xv <= 0) { 
+				puts("U IS TO THE LEFT HAND OF V BUT V IS TO THE LEFT HAND OF X");
+				angle_from_x = acos(dot_vx/(vec2_length(v)*vec2_length(V_I)))*-1; // u is to the left hand of v 
+			} else if (det_vu < 0 && det_xv > 0){
+				puts("U IS TO THE LEFT HAND OF V BUT V IS TO THE RIGHT HAND OF X");
+				angle_from_x = acos(dot_vx/(vec2_length(v)*vec2_length(V_I))); // u is to the left hand of v 
+			}
+			else if (det_vu > 0 && det_xu < 0) angle_from_x = acos(dot_ux/(vec2_length(u)*vec2_length(V_I)))*-1; // u is to the right hand of v and left hand of x
+			else if (det_vu > 0 && det_xu >= 0) angle_from_x = acos(dot_ux/(vec2_length(u)*vec2_length(V_I))); // u is to the right hand of v and right hand of x
 			else {
 				// u and v are parallel
 				if (dot_uv < 0) angle_from_x = acos(dot_ux/(vec2_length(u)*vec2_length(V_I)))*-1; // angle between u and v is 180
 				else return; // angle between u and v is 0
 			}
 			printf("NEGATIVE: angle1: %f. angle2: %f\n", angle_from_x, angle_from_x - angle_uv);
-			cairo_arc_negative(cr, R.x, R.y, (ctx->width+ctx->height)*0.03, angle_from_x, angle_from_x-angle_uv);
+			cairo_arc_negative(cr, R.x, R.y, (ctx->width+ctx->height)*0.03, angle_from_x, angle_from_x - angle_uv);
 			cairo_stroke(cr);
 		}
 	} else {
