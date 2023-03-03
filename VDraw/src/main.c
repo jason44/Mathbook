@@ -335,13 +335,8 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex)
 		} else if (det_xu < 0) {
 			// u is to the left hand of x
 			double det_vu = vec2_det(v, u);
-			if (det_vu < 0 && det_xv <= 0) { 
-				puts("U IS TO THE LEFT HAND OF V BUT V IS TO THE LEFT HAND OF X");
-				angle_from_x = acos(dot_vx/(vec2_length(v)*vec2_length(V_I)))*-1; // u is to the left hand of v 
-			} else if (det_vu < 0 && det_xv > 0){
-				puts("U IS TO THE LEFT HAND OF V BUT V IS TO THE RIGHT HAND OF X");
-				angle_from_x = acos(dot_vx/(vec2_length(v)*vec2_length(V_I))); // u is to the left hand of v 
-			}
+			if (det_vu < 0 && det_xv <= 0) angle_from_x = acos(dot_vx/(vec2_length(v)*vec2_length(V_I)))*-1; // u is to the left hand of v 
+			else if (det_vu < 0 && det_xv > 0) angle_from_x = acos(dot_vx/(vec2_length(v)*vec2_length(V_I))); // u is to the left hand of v 
 			else if (det_vu > 0 && det_xu < 0) angle_from_x = acos(dot_ux/(vec2_length(u)*vec2_length(V_I)))*-1; // u is to the right hand of v and left hand of x
 			else if (det_vu > 0 && det_xu >= 0) angle_from_x = acos(dot_ux/(vec2_length(u)*vec2_length(V_I))); // u is to the right hand of v and right hand of x
 			else {
