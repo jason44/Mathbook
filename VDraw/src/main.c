@@ -76,10 +76,27 @@ typedef struct Polygon {
 	bool fill;
 } Polygon;
 
-
 inline double vec2_dot(const vec2 u, const vec2 v) 
 {
 	return (u.x * v.x) + (u.y * v.y);
+}
+
+inline vec2_length(const vec2 u)
+{
+	return sqrt(pow(u.x, 2) + pow(u.y, 2));
+}
+
+/*********************************************
+determinant is calculated with a 2x2 matrix where
+|u_x, v_x|
+|u_y, v_y}
+
+if det(u, v) is positive, then v is to the right hand of u
+if det(u, v) is negative, then v is to the left hand of u
+*********************************************/
+inline double vec2_det(const vec2 u, const vec2 v)
+{
+	return (u.x * v.y) - (u.y - v.x);
 }
 
 #ifdef IMAGE_COORDINATTES
@@ -275,17 +292,66 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex) {
 	vec2 v = {Q.x-R.x, Q.y-R.y};
 
 	double dot_uv = vec2_dot(u, v);
-	double angle_uv = acos(dot_uv / ((sqrt(pow(u.x, 2) + pow(u.y, 2))) * (sqrt(pow(v.x, 2) + pow(v.y, 2)))));
+	double angle_uv = acos(dot_uv / ((vec2_length(u)) * (vec2_length(v))));
 	printf("angle between u and x: %f\n", angle_uv);
+	
+	// NOTE: acos only gives angles between 0 and PI
 	if (dot_uv != 0) {
-		// angle between u and v in the right hand coordinate 
-		// system is less than 180
+		// dot(u, v)//||u||||v|| always returns the smallest angle between the two 
+		double det_xv = vec2_det(V_I, v);
+		double det_xu = vec2_det(V_I, u);
 		double dot_ux = vec2_dot(u, V_I);
 		double dot_vx = vec2_dot(v, V_I);
-
+		if (det_xu > 0) {
+			// u is to the right hand of x
+			double det_uv = vec2_det(u, v);
+			if (det_uv > 0) {
+				// v is to the right hand of u
+				double angle_xu = acos(dot_ux/(vec2_length(u)*vec2_length(V_I)));
+				cairo_arc(ctx->cr, R.x, R.y, angle_xu, angle_xu + angle_uv);
+			} else if (det_uv < 0) {
+				// v is to the left hand of u
+			} else {
+				// u and v are parallel 
+				if (dot_uv < 0) {
+					// angle between u and v is 180
+				} else {
+					// angle between u and v is 0
+				}
+			}
+		} else if (det_xu < 0) {
+			// x is to the left hand of u
+			double det_vu = vec2_det(v, u)
+			if (det_vu > 0) {
+				// u is to the right hand of v 
+			} else if (det_vu < 0) {
+				// u is to the left hand of v
+			} else {
+				// u and v are parallel
+				if (dot_uv < 0) {
+					// angle between u and v is 180
+				}
+			}
+		} else {
+			// u and v intersect at a right angle  	
+			size_t angle_vcount = 5;
+			vec2 angle_vertices[] = {
+				R, {P.x*0.1, P.y*0.1}, {(P.x+Q.x)*0.1, (P.y+Q.y)*0.1}, {Q.x*0.1, Q.y*0.1}, R
+			};
+			Polygon angle_poly = {
+				.vertices = angle_vertices,
+				.vertex_count = angle_vcount,
+				.lw = 0.05,
+				.color = {0.1, 0.1, 0.1, 1.0},
+				.fill = false
+			}
+			vdraw_polygon(ctx, &angle_poly);
+		}
+	
+		/*
 		if (dot_ux < dot_vx) {
 			double proj_ux_m = vec2_dot(u, V_I);
-			vec2 proj_ux = {proj_ux_m*V_I.x, proj_ux_m*V_I.y};
+			ve c2 proj_ux = {proj_ux_m*V_I.x, proj_ux_m*V_I.y};
 			double angle_ux = acos(dot_ux / ((sqrt(pow(u.x, 2) + pow(u.y, 2))) * (sqrt(pow(proj_ux.x, 2) + pow(proj_ux.y, 2)))));
 			printf("angle between u and x: %f\n", angle_ux);
 			cairo_arc(cr, R.x, R.y, (ctx->width+ctx->height)*0.03, M_PI_2 + angle_ux, M_PI_2 + angle_ux+angle_uv);
@@ -295,11 +361,11 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex) {
 			double angle_vx = acos(dot_vx / ((sqrt(pow(v.x, 2) + pow(v.y, 2))) * (sqrt(pow(proj_vx.x, 2) + pow(proj_vx.y, 2)))));
 			printf("angle between u and x: %f\n", angle_vx);
 			cairo_arc(cr, R.x, R.y, (ctx->width+ctx->height)*0.03, M_PI_2 + angle_vx, M_PI_2 + angle_vx-angle_uv);
-		}
+		} 
 	} else {
 		// perpendicular (right angle)
 		puts("I haven't defined this yet sir");
-	}  
+	} */ 
 
 
 	cairo_stroke(cr);
