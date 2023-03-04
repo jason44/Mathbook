@@ -28,6 +28,7 @@ gcc main.c -lcairo -lm -Wall -O2
 #define VUP CMPLX(0.0f, 1.0f)
 #define VDOWN CMPLX(0.0f, -1.0f)
 
+typedef struct VDrawContext* VDrawContext;
 typedef double complex vcomplex;
 typedef struct Edge Line;
 typedef float* RGBA;
@@ -36,8 +37,9 @@ typedef struct {
 	float r, g, b, a;
 } RGBA_t;
 
+/* vdraw_set_style defaults if VDrawSettings is empty */
 typedef struct VDrawSettings {
-	cairo_fill_rule_t fill;
+	cairo_fill_rule_t fillrule;
 	cairo_line_cap_t linecap;
 	cairo_line_join_t linejoin;
 	bool dash;
@@ -46,14 +48,19 @@ typedef struct VDrawSettings {
 	RGBA_t color;	
 } VDrawSettings;
 
-typedef struct VDrawContext {
-	cairo_surface_t *surface;
-	cairo_t *cr;
+typedef struct VDrawCreateInfo {
 	const char *filename;
 	const double height;
 	const double width;
-	bool image_coordinates;
-} VDrawContext;
+} VDrawCreateInfo;
+
+struct VDrawContext {
+	cairo_surface_t *surface;
+	cairo_t *cr;
+	const char *filename;
+	double height;
+	double width;
+};
 
 typedef struct vec2 {
 	float x, y;
@@ -79,9 +86,7 @@ Polygon poly = {
 	.lw = 1.0,
 	.color = [1.0, 1.0, 1.0, 1.0],
 };
-
-dash and fill are optional
-****************************/
+*******************************/
 typedef struct Polygon {
 	vec2 *vertices;
 	size_t vertex_count;
@@ -118,14 +123,14 @@ inline double edge_length(const Edge edge)
 }
 
 #ifdef IMAGE_COORDINATTES
-void vec2_to_image_coordinates(double image_width, double image_height, 
-	vec2 *verticies, const size_t vertex_count)	
+void vec2_to_image_coordinates(VDrawContext ctx, 
+	vec2 *vertices, const size_t vertex_count)	
 {
-	image_width /= 2.0;
-	image_height /= 2.0;
+	const double image_width = ctx->width / 2.0;
+	const double image_height = ctx->height / 2.0;
 	for (size_t i = 0; i < vertex_count; i++) {
-		verticies[i].x = verticies[i].x + image_width;
-		verticies[i].y = (verticies[i].y + image_height) -1;
+		vertices[i].x = vertices[i].x + image_width;
+		vertices[i].y = vertices[i].y + image_height;
 	}
 }
 #endif
@@ -174,28 +179,36 @@ void polygon_remove_closing_point(Polygon *poly) {
 	}
 }
 
-void vdraw_create(VDrawContext *ctx)
+VDrawContext vdraw_create(VDrawCreateInfo *info)
 {
-	assert(ctx->filename);
-	assert(ctx->width);
-	assert(ctx->height);
-	ctx->surface = cairo_pdf_surface_create(ctx->filename, ctx->width, ctx->height);
+	assert(info->filename);
+	assert(info->width);
+	assert(info->height);
+	VDrawContext ctx = (VDrawContext)malloc(sizeof(*ctx));
+	assert(ctx);
+	ctx->surface = cairo_pdf_surface_create(info->filename, info->width, info->height);
 	ctx->cr = cairo_create(ctx->surface);
+	ctx->filename = info->filename;
+	ctx->width = info->width;
+	ctx->height = info->height;
+	cairo_set_source_rgba(ctx->cr, 1.0, 1.0, 1.0, 1.0);
 	cairo_paint(ctx->cr);	
+	return ctx;
 }
 
-void vdraw_destroy(VDrawContext *ctx)
+void vdraw_destroy(VDrawContext ctx)
 {
 	cairo_destroy(ctx->cr);	
 	cairo_surface_destroy(ctx->surface);
+	free(ctx);
 }
 
-inline void vdraw_save(VDrawContext *ctx) 
+inline void vdraw_save(VDrawContext ctx) 
 {
 	cairo_show_page(ctx->cr);
 }
 
-void vdraw_set_style(VDrawContext *ctx, VDrawSettings *settings)
+void vdraw_set_style(VDrawContext ctx, VDrawSettings *settings)
 {
 	/*
 	cairo_fill_rule_t fill;
@@ -206,23 +219,22 @@ void vdraw_set_style(VDrawContext *ctx, VDrawSettings *settings)
 	double lw;
 	RGBA_t color;	
 	*/
-	cairo_t *cr = ctx->cr;
 	RGBA c;
 	if (settings->color.r) c = &settings->color;
 	else c = (RGBA)(&(RGBA_t){0.0, 0.0, 0.0, 1.0});
-	cairo_set_source_rgba(cr, c[0], c[1], c[2], c[3]);
+	cairo_set_source_rgba(ctx->cr, c[0], c[1], c[2], c[3]);
 
 	double lw;
 	if (settings->lw) lw = settings->lw;
 	else lw = 0.15;
-	cairo_set_line_width(cr, lw);
+	cairo_set_line_width(ctx->cr, lw);
 
 	if (settings->dash) {
 		const double dashes[] = {10.0, 10.0};
-		cairo_set_dash(cr, dashes, 2, -10.0);
+		cairo_set_dash(ctx->cr, dashes, 2, -10.0);
 	}
 	
-	if (settings->fill) cairo_set_fill_rule(ctx->cr, settings->fill);
+	if (settings->fillrule) cairo_set_fill_rule(ctx->cr, settings->fillrule);
 	else cairo_set_fill_rule(ctx->cr, CAIRO_FILL_RULE_WINDING);
 	
 	if (settings->linecap) cairo_set_line_cap(ctx->cr, settings->linecap);
@@ -233,13 +245,13 @@ void vdraw_set_style(VDrawContext *ctx, VDrawSettings *settings)
 
 }
 
-void vdraw_line(VDrawContext *ctx, Line line, VDrawSettings *settings );
+void vdraw_line(VDrawContext ctx, VDrawSettings *settings, Line line)
 {
-	if (edge.p == edge.q) goto ERROR_EXIT;
+	if (line.p.x == line.q.x && line.p.y == line.q.y) goto ERROR_EXIT;
 	vdraw_set_style(ctx, settings);
-	cairo_move_to(ctx->cr, edge.p.x, edge.p.y);
-	cairo_line_to(ctx->cr, edge.q.x, edge.q.y);
-	cairo_stroke(cr);
+	cairo_move_to(ctx->cr, line.p.x, line.p.y);
+	cairo_line_to(ctx->cr, line.q.x, line.q.y);
+	cairo_stroke(ctx->cr);
 	return;
 
 	ERROR_EXIT: {
@@ -248,18 +260,12 @@ void vdraw_line(VDrawContext *ctx, Line line, VDrawSettings *settings );
 	}
 }
 
-void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
+void vdraw_polygon(VDrawContext ctx, Polygon *poly)
 {
 	if (!poly->vertices || !poly->vertex_count) goto ERROR_EXIT;
 
 	polygon_remove_closing_point(poly);
 	vdraw_set_style(ctx, &poly->settings);
-
-	if (!ctx->image_coordinates) {
-		vec2_to_image_coordinates(ctx->width, ctx->height, 
-			poly->vertices, poly->vertex_count);
-		ctx->image_coordinates = true;
-	}
 
 	vec2 *vertices = poly->vertices;
 	size_t vertex_count = poly->vertex_count;
@@ -277,6 +283,7 @@ void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
 
 	// preserve the path so cairo knows what to fill
 	if (poly->settings.fill) {
+		RGBA c = (RGBA)&poly->settings.color;
 		cairo_stroke_preserve(ctx->cr);
 		cairo_set_source_rgba(ctx->cr, c[0], c[1], c[2], 0.2);
 		cairo_fill(ctx->cr);
@@ -291,7 +298,7 @@ void vdraw_polygon(VDrawContext *ctx, Polygon *poly)
 }
 
 // specify vertex by index
-void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex) 
+void vdraw_polygon_angle(VDrawContext ctx, Polygon *poly, const int vertex) 
 {
 	if (!poly->vertices || !poly->vertex_count) goto ERROR_EXIT;
 	if (vertex >= poly->vertex_count) goto ERROR_EXIT;
@@ -299,19 +306,11 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex)
 	polygon_remove_closing_point(poly);
 	vdraw_set_style(ctx, &poly->settings);
 
-	if (!ctx->image_coordinates) {
-		vec2_to_image_coordinates(ctx->width, ctx->height, 
-			poly->vertices, poly->vertex_count);
-		ctx->image_coordinates = true;
-	}
-
-	// modify the color values
-	cairo_t *cr = ctx->cr;
 	RGBA c;
 	if (poly->settings.color.r) c = &poly->settings.color;
 	else c = (RGBA)(&(RGBA_t){0.0, 0.0, 0.0, 1.0});
 	// inverse R and B for angles only
-	cairo_set_source_rgba(cr, c[2], c[1], c[0], c[3]);
+	cairo_set_source_rgba(ctx->cr, c[2], c[1], c[0], c[3]);
 
 
 	vec2 R = poly->vertices[vertex];
@@ -327,7 +326,7 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex)
 	vec2 u = {P.x-R.x, P.y-R.y};
 	vec2 v = {Q.x-R.x, Q.y-R.y};
 
-#ifdef _V_DEBUG_
+	#ifdef _V_DEBUG_
 	puts("_____________________");
 	printf("INDEX: %i | (%f, %f)\n", vertex, R.x, R.y);
 	for (size_t i = 0; i < poly->vertex_count; i++) {
@@ -335,7 +334,7 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex)
 	}
 	puts("_____________________");
 	printf("R(%f, %f) | P(%f, %f) | Q(%f, %f)\n", R.x, R.y, P.x, P.y, Q.x, Q.y);
-#endif
+	#endif
 
 	//cairo_new_path(cr);
 	//cairo_move_to(cr, R.x, R.y);
@@ -352,7 +351,7 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex)
 		double dot_ux = vec2_dot(u, V_I);
 		double dot_vx = vec2_dot(v, V_I);
 
-	#ifdef _V_DEBUG_
+		#ifdef _V_DEBUG_
 		printf("u = (%f, %f) v = (%f, %f)\n", u.x, u.y, v.x, v.y);
 		printf("dot_uv/(vec2_length(u)*vec2_length(v)): %f\n", 
 			dot_uv/(vec2_length(u)*vec2_length(v)));
@@ -360,7 +359,7 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex)
 			dot_ux/(vec2_length(u)*vec2_length(V_I)));
 		printf("dot_vx/(vec2_length(v)*vec2_length(V_I): %f\n", 
 			dot_vx/(vec2_length(v)*vec2_length(V_I)));
-	#endif
+		#endif
 
 		double angle_from_x = 0;
 		if (det_xu >= 0) {
@@ -375,7 +374,7 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex)
 			else if (det_uv < 0 && det_xv < 0) 
 				// v is to the left hand of u and x
 				angle_from_x = acos(dot_vx/(vec2_length(v)*vec2_length(V_I)))*-1; 
-			else { 
+			else { // NOTE: remove block where u and v are parallel
 				// u and v are parallel 
 				if (dot_uv < 0) 
 					// angle between u and v is 180
@@ -384,9 +383,9 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex)
 			}
 			printf("POSITIVE: angle1: %f. angle2: %f\n", 
 				angle_from_x, angle_from_x + angle_uv);
-			cairo_arc(cr, R.x, R.y, (ctx->width+ctx->height)*0.03, angle_from_x, 
-				angle_from_x + angle_uv);
-			cairo_stroke(cr);
+			cairo_arc(ctx->cr, R.x, R.y, (ctx->width+ctx->height)*0.025, 
+				angle_from_x, angle_from_x + angle_uv);
+			cairo_stroke(ctx->cr);
 		} else if (det_xu < 0) {
 			// u is to the left hand of x
 			double det_vu = vec2_det(v, u);
@@ -397,12 +396,12 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex)
 				// u is to the left hand of v and v is to the right hand of x
 				angle_from_x = acos(dot_vx/(vec2_length(v)*vec2_length(V_I))); 
 			else if (det_vu > 0 && det_xu < 0) 
-				angle_from_x = acos(dot_ux/(vec2_length(u)*vec2_length(V_I)))*-1; 
 				// u is to the right hand of v and left hand of x
+				angle_from_x = acos(dot_ux/(vec2_length(u)*vec2_length(V_I)))*-1; 
 			else if (det_vu > 0 && det_xu >= 0) 
 				// u is to the right hand of v and right hand of x
 				angle_from_x = acos(dot_ux/(vec2_length(u)*vec2_length(V_I))); 
-			else {
+			else { // NOTE: remove block where u and v are parallel because that is not possible in a valid polygon
 				// u and v are parallel
 				if (dot_uv < 0) 
 					// angle between u and v is 180
@@ -411,19 +410,24 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex)
 			}
 			printf("NEGATIVE: angle1: %f. angle2: %f\n",
 				angle_from_x, angle_from_x - angle_uv);
-			cairo_arc_negative(cr, R.x, R.y, (ctx->width+ctx->height)*0.03, 
+			cairo_arc_negative(ctx->cr, R.x, R.y, (ctx->width+ctx->height)*0.025, 
 				angle_from_x, angle_from_x - angle_uv);
-			cairo_stroke(cr);
+			cairo_stroke(ctx->cr);
 		}
 	} else {
 		// u and v intersect at a right angle  	
+		vec2 u_n = {u.x/vec2_length(u), u.y/vec2_length(u)};
+		vec2 v_n = {v.x/vec2_length(v), v.y/vec2_length(v)};
+		const double imgr = (ctx->width + ctx->height)*0.025;
 		size_t angle_vcount = 5;
 		vec2 angle_vertices[] = {
-			R, {P.x*0.1, P.y*0.1}, {(P.x+Q.x)*0.1, (P.y+Q.y)*0.1}, {Q.x*0.1, Q.y*0.1}, R
+			R, {R.x+(u_n.x*imgr), R.y+(u_n.y*imgr)}, 
+			{R.x+((u_n.x+v_n.x)*imgr), R.y+((u_n.y+v_n.y)*imgr)}, 
+			{R.x+(v_n.x*imgr), R.y+(v_n.y*imgr)}, R
 		};
 		VDrawSettings settings = {
 			.lw = 0.05,
-			.color = {0.1, 0.1, 0.1, 1.0},
+			.color = (RGBA_t){c[2], c[1], c[0], c[3]},
 			.fill = false
 		};
 		Polygon angle_poly = {
@@ -444,6 +448,12 @@ void vdraw_polygon_angle(VDrawContext *ctx, Polygon *poly, const int vertex)
 
 int main(int argc, char* argv[])
 {
+	VDrawCreateInfo info = {
+		.filename = "test.pdf",
+		.width = 10.0,
+		.height = 10.0
+	};
+	VDrawContext ctx = vdraw_create(&info);
 	const size_t vertex_count = 4;
 	vec2 vertices[] = {
 		{0.0, 0.0},
@@ -451,33 +461,46 @@ int main(int argc, char* argv[])
 		{4.0, -2.0},
 		{0.0, 0.0}
 	};
+	vec2_to_image_coordinates(ctx, vertices, vertex_count);
+
 	VDrawSettings settings = {
 		.lw = 0.05,
-		.color = {0.1, 0.1, 0.1, 1.0},
-		.fill = false
+		.color = {0.6, 0.1, 0.1, 1.0},
+		.fill = true
 	};
 	Polygon poly = {
 		.vertices = vertices,
 		.vertex_count = vertex_count,
 		.settings = settings
 	};
-	VDrawContext ctx = {
-		.filename = "test.pdf",
-		.width = 10.0,
-		.height = 10.0
+	vdraw_polygon_angle(ctx, &poly, 1);
+	vdraw_polygon_angle(ctx, &poly, 0);
+	vdraw_polygon_angle(ctx, &poly, 2);
+	vdraw_polygon(ctx, &poly);	
+
+	const size_t vertex_count2 = 4;
+	vec2 vertices2[] = {
+		{-4.0, -3.0},
+		{-1.0, -3.0},
+		{-1.0, 2.0},
+		{-4.0, -3.0}
 	};
-	vdraw_create(&ctx);
-	/*
-	size_t edge_count;
-	vdraw_calculate_edges_as_vectors(&poly, &edge_count);
-	*/
-	vdraw_polygon_angle(&ctx, &poly, 1);
-	vdraw_polygon_angle(&ctx, &poly, 0);
-	vdraw_polygon_angle(&ctx, &poly, 2);
-	vdraw_polygon(&ctx, &poly);	
+	vec2_to_image_coordinates(ctx, vertices2, vertex_count2);
+
+	Polygon poly2 = {
+		.vertices = vertices2,
+		.vertex_count = vertex_count2,
+		.settings = settings
+	};
+	vdraw_polygon_angle(ctx, &poly2, 1);
+	vdraw_polygon_angle(ctx, &poly2, 0);
+	vdraw_polygon_angle(ctx, &poly2, 2);
+	vdraw_polygon(ctx, &poly2);	
 	
-	vdraw_save(&ctx);
-	vdraw_destroy(&ctx);
+
+
+	vdraw_save(ctx);
+	vdraw_destroy(ctx);
 	
 	return 0;
 }
@@ -485,4 +508,6 @@ int main(int argc, char* argv[])
 /*
  * TODO: keep track of the vertices that extend the farthest past the origin 
  * so we can crop the final image with that information
+ * TODO: turn Polygon into an opaque struct. 
+ * Ideally only VDrawSettingsInfo and VDrawCreateInfo should be a user configurable struct
  */
