@@ -278,7 +278,7 @@ $(x+y)^n=(^n_0)x^n+(^n_1)x^{n-1}y+(^n_2)x^{n-2}y^2\dots+(^n_{n-1})xy^{n-1}+(^n_n
  \includegraphics[width=0.40\textwidth]{venn.png}
 \end{figure}
 The cardinality $|A \cup B|$ is relatively easy to find. $|A|+|B|$ is close, but not quite because it does not exclude the elements in \textbf{both} $A$ and $B$.\\
-\textbf{Definition}: $|A \cup B|=|A|+|B|+|A \cap B|$\vspace{5pt}\\
+\textbf{Definition}: $|A \cup B|=|A|+|B|- |A \cap B|$\vspace{5pt}\\
 \textbf{Example}\\
 A hand of 3-card hand is dealt from a standard deck of 52 cards. How many hands have all red or all face cards?
 \begin{enumerate}
@@ -445,9 +445,35 @@ A real number, $x$, is irrational if $x \neq \frac{a}{b}~~\forall a,b \in \mathb
 
 \textbf{}
 
-\subsection{Uniqueness Proofs}
+\subsection{Non-Conditional Proofs}
+\subsubsection{If-and-only-if}
+To prove a biconditional, just prove the conditional, then prove the converse.
+
+\subsubsection{Equivalence Statements}
+An equivalence statement asserts that the statments $A,B,C,D\dots$ are all equivalent to each other. Which is to say, either they are all true, or they are all false. Therefore to prove equivalence, we create a loop of conditionals. that is, $A\rightarrow B \rightarrow C \rightarrow D \rightarrow A$, and we must prove that every conditional in this loop holds.\\
+The conditionals do not need to be proven in a loop though. Biconditionals can be used instead. The only ``requirement'' is that at least one statement is proven by another statement.
+
+\subsubsection{Existence}
+To prove existence, just provide an example to the existentially qualified statement
+
+\subsubsection{Constructive and Non-Constructive Proofs}
+Existence proofs fall into two categories. Constructive proofs provide an example to the statement while a non-constructive proof proves that an example exists but does not give a specific one.
+
+\subsubsection{Uniqueness Proofs}
 Some propositions ask for existence as well as uniqueness. Proving existence is
-well known, but to prove uniqueness, you need to show that assuming the existence of more than one value will lead to a contradiction.
+obvious enough, but to prove uniqueness, you need to show that assuming the existence of more than one value will lead to a contradiction.
+
+\subsection{Induction}
+Let $P()$ be a proposition or asssertion about the natural numbers
+Suppose $P(1)$ is true.\\
+Suppose that $P(n)$ is also true for $n \in \ mathbb{N}$.
+Then if $P(n+1)$, then $P()$ is true for all natural numbers
+
+\subsubsection{Strong Induction}
+Let $P(25)$ be true, then $1 < m \leq 25$ such that $n=m-25$. Then assume $P(n)$. $P(n+1)$ is true for all natural numbers.
+
+\subsubsection{Proof by Smallest Counterexample}
+Begin by showing that $P(1), P(2)\dots P(i)$ are all true. Then suppose there is an $m>i$ such that $P(m)$ does not hold. Then show how this assumption leads to a contradiction.
 
 \subsection{Relations}
 All relations of the elements in the set $A$ can be represented by a subset of $A \times A$. For example, consider the set $\{1,2,3,4,5\}$, the set\\
