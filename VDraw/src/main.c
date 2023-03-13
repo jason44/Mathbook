@@ -17,6 +17,7 @@ gcc main.c -lcairo -lm -Wall -O2
 
 #define _V_DEBUG_
 
+#define VDRAW_MAX_ANNOTATIONS 20
 #define VDRAW_MAX_POLYGONS 10
 #define VDRAW_STYLE_POLYGON (VDrawStyleInfo){}
 
@@ -32,6 +33,8 @@ typedef struct VDrawContext* VDrawContext;
 typedef double complex vcomplex;
 typedef struct VEdge VLine;
 typedef float* RGBA;
+typedef uint32_t VPolygon;
+typedef uint32_t VAnnotation;
 
 typedef struct {
 	float r, g, b, a;
@@ -44,8 +47,6 @@ typedef struct vvec2 {
 typedef struct VEdge {
 	vvec2 p, q;
 } VEdge;
-
-typedef uint32_t VPolygon;
 
 /****************************
 Defining a polygon:
@@ -76,6 +77,22 @@ typedef struct VDrawStyleInfo {
 	RGBA_t color;	
 } VDrawStyleInfo;
 
+typedef struct VAnnotationInfo {
+	double size;
+	/* CAIRO_FONT_SLANT_NORMAL
+	 * CAIRO_FONT_SLANT_OBLIQUE
+	 * CAIRO_FONT_SLANT_ITALIC */
+	cairo_font_slant_t slant;
+	/* CAIRO_FONT_WEIGHT_NORMAL
+	 * CAIRO_FONT_WEIGHT_BOLD */
+	cairo_font_weight_t weight;
+} VAnnotationInfo;
+
+struct VAnnotationInterface {
+	const char *label;
+	VAnnotationInfo settings;
+};
+
 typedef struct VDrawCreateInfo {
 	const char *filename;
 	const double height;
@@ -99,6 +116,51 @@ struct VPolygonInterface {
 struct VPolygonInterface _VDRAW_POLYGONS[VDRAW_MAX_POLYGONS];
 size_t _VDRAW_POLYGONS_SIZE = 0;
 
+struct VAnnotationInterface _VDRAW_ANNOTATIONS[VDRAW_MAX_ANNOTATIONS];
+size_t _VDRAW_ANNOTATIONS_SIZE = 0;
+
+void vdraw_set_style(VDrawContext ctx, VDrawStyleInfo *settings);
+
+VAnnotation vannotation_create(const char *label, VAnnotationInfo *info)
+{
+	assert(_VDRAW_ANNOTATIONS_SIZE < VDRAW_MAX_ANNOTATIONS);
+	_VDRAW_ANNOTATIONS[_VDRAW_ANNOTATIONS_SIZE] = (struct VAnnotationInterface){
+		.label = label,
+		.settings = *info
+	};
+	return _VDRAW_ANNOTATIONS_SIZE++;
+}
+
+void vannotation_set_style(VDrawContext ctx, VAnnotation annotation)
+{
+	struct VAnnotationInterface *anno = &_VDRAW_ANNOTATIONS[annotation];
+
+	/*
+	if (anno->settings) {
+		anno->settings = (VAnnotationInfo) {
+			.size = 12.0,
+			.slant = CAIRO_FONT_SLANT_NORMAL,
+			.weight = CAIRO_FONT_WEIGHT_BOLD
+		}
+	}*/
+
+	VDrawStyleInfo styleinfo = {};	
+	vdraw_set_style(ctx, &styleinfo);
+
+	if (anno->settings.size) cairo_set_font_size(ctx->cr, anno->settings.size);
+	else {cairo_set_font_size(ctx->cr, (ctx->width+ctx->height)*0.02); puts("HELLODOSJFODJFOSJ");}
+
+	cairo_font_slant_t slant;
+	if (anno->settings.slant) slant = anno->settings.slant;
+	else slant = CAIRO_FONT_SLANT_NORMAL;
+
+	cairo_font_weight_t weight;
+	if (anno->settings.weight) weight = anno->settings.weight;
+	else weight = CAIRO_FONT_WEIGHT_BOLD;
+
+	/*("serif", "sans-serif", "cursive", "fantasy", "monospace")*/
+	cairo_select_font_face(ctx->cr, "sans-serif", slant, weight);
+}
 
 inline double vvec2_dot(const vvec2 u, const vvec2 v) 
 {
@@ -135,6 +197,36 @@ void vvec2_to_image_coordinates(VDrawContext ctx,
 	}
 }
 
+void vvec2_annotate(VDrawContext ctx, const vvec2 vertex, VAnnotation annotation)
+{
+	// cairo_text_path() <- text to path which can be filled 
+	//	move_to reference point before turning text into path (you can't move it afterwords)
+	// cairo_show_text or cairo_show_glyph <- faster than cairo_text_path()]
+	struct VAnnotationInterface *anno = &_VDRAW_ANNOTATIONS[annotation];
+	vannotation_set_style(ctx, annotation);
+	cairo_text_extents_t te;
+	cairo_text_extents(ctx->cr, anno->label, &te); 
+    cairo_move_to (ctx->cr, vertex.x - (te.width/2) , vertex.y + (te.height/2));
+	cairo_show_text(ctx->cr, anno->label);
+	cairo_fill(ctx->cr);
+}
+
+void vvec2_annotate_to(VDrawContext ctx, vvec2 vertex, 
+	VAnnotation annotation, const double complex direction)
+{
+	double i = cimag(direction);
+	double r = creal(direction);
+	
+	struct VAnnotationInterface *anno = &_VDRAW_ANNOTATIONS[annotation];
+	vannotation_set_style(ctx, annotation);
+	cairo_text_extents_t te;
+	cairo_text_extents(ctx->cr, anno->label, &te); 
+    cairo_move_to (ctx->cr, vertex.x - (te.width/2) + (r*0.25), 
+		vertex.y + (te.height/2) - (i*0.25));
+	cairo_show_text(ctx->cr, anno->label);
+	cairo_fill(ctx->cr);
+}
+
 inline double vedge_length(const VEdge edge)
 {
 	return vvec2_length((vvec2){edge.p.x - edge.q.x, edge.p.y - edge.q.y});
@@ -164,7 +256,7 @@ void vpolygon_calculate_edges(VPolygon polygon, VEdge *edges)
 }
 
 /*********** FREE THE ALLOCATED ARRAY ***********/
-size_t vpolygon_calculate_edges_as_vectors(VPolygon polygon, size_t *edge_count)
+VEdge *vpolygon_calculate_edges_as_vectors(VPolygon polygon, size_t *edge_count)
 {
 	struct VPolygonInterface *poly = &_VDRAW_POLYGONS[polygon];
 	assert(poly->vertices[1].x);
@@ -239,10 +331,10 @@ void vdraw_set_style(VDrawContext ctx, VDrawStyleInfo *settings)
 	double lw;
 	RGBA_t color;	
 	*/
-	RGBA c;
-	if (settings->color.r) c = &settings->color;
-	else c = (RGBA)(&(RGBA_t){0.0, 0.0, 0.0, 1.0});
-	cairo_set_source_rgba(ctx->cr, c[0], c[1], c[2], c[3]);
+	RGBA_t c;
+	if (settings->color.r) c = settings->color;
+	else c = (RGBA_t){0.0, 0.0, 0.0, 1.0};
+	cairo_set_source_rgba(ctx->cr, c.r, c.g, c.b, c.a);
 
 	double lw;
 	if (settings->lw) lw = settings->lw;
@@ -265,13 +357,14 @@ void vdraw_set_style(VDrawContext ctx, VDrawStyleInfo *settings)
 
 }
 
-void vdraw_line(VDrawContext ctx, VDrawStyleInfo *settings, VLine line)
+void vdraw_line(VDrawContext ctx, VLine line, VDrawStyleInfo *settings)
 {
 	if (line.p.x == line.q.x && line.p.y == line.q.y) goto ERROR_EXIT;
 	vdraw_set_style(ctx, settings);
 	cairo_move_to(ctx->cr, line.p.x, line.p.y);
 	cairo_line_to(ctx->cr, line.q.x, line.q.y);
 	cairo_stroke(ctx->cr);
+
 	return;
 
 	ERROR_EXIT: {
@@ -304,9 +397,9 @@ void vdraw_polygon(VDrawContext ctx, VPolygon polygon)
 
 	// preserve the path so cairo knows what to fill
 	if (poly->settings.fill) {
-		RGBA c = (RGBA)&poly->settings.color;
+		RGBA_t c = poly->settings.color;
 		cairo_stroke_preserve(ctx->cr);
-		cairo_set_source_rgba(ctx->cr, c[0], c[1], c[2], 0.2);
+		cairo_set_source_rgba(ctx->cr, c.r, c.g, c.b, 0.25);
 		cairo_fill(ctx->cr);
 	} else cairo_stroke(ctx->cr);
 
@@ -328,11 +421,11 @@ void vdraw_polygon_angle(VDrawContext ctx, VPolygon polygon, const int vertex)
 	vpolygon_remove_closing_point(polygon);
 	vdraw_set_style(ctx, &poly->settings);
 
-	RGBA c;
-	if (poly->settings.color.r) c = &poly->settings.color;
-	else c = (RGBA)(&(RGBA_t){0.0, 0.0, 0.0, 1.0});
+	RGBA_t c;
+	if (poly->settings.color.r) c = poly->settings.color;
+	else c = (RGBA_t){0.0, 0.0, 0.0, 1.0};
 	// inverse R and B for angles only
-	cairo_set_source_rgba(ctx->cr, c[2], c[1], c[0], c[3]);
+	cairo_set_source_rgba(ctx->cr, c.b, c.g, c.r, c.a);
 
 
 	vvec2 R = poly->vertices[vertex];
@@ -389,18 +482,22 @@ void vdraw_polygon_angle(VDrawContext ctx, VPolygon polygon, const int vertex)
 			double det_uv = vvec2_det(u, v);
 			if (det_uv > 0) 
 				// v is to the right hand of u
-				angle_from_x = acos(dot_ux/(vvec2_length(u)*vvec2_length(V_I))); 
+				//angle_from_x = acos(dot_ux/(vvec2_length(u)*vvec2_length(V_I))); 
+				angle_from_x = acos(dot_ux/(vvec2_length(u))); 
 			else if (det_uv < 0 && det_xv >= 0) 
 				// v is to the left hand of u but to the right hand of x
-				angle_from_x = acos(dot_vx/(vvec2_length(v)*vvec2_length(V_I))); 
+				//angle_from_x = acos(dot_vx/(vvec2_length(v)*vvec2_length(V_I))); 
+				angle_from_x = acos(dot_vx/(vvec2_length(v))); 
 			else if (det_uv < 0 && det_xv < 0) 
 				// v is to the left hand of u and x
-				angle_from_x = acos(dot_vx/(vvec2_length(v)*vvec2_length(V_I)))*-1; 
+				//angle_from_x = acos(dot_vx/(vvec2_length(v)*vvec2_length(V_I)))*-1; 
+				angle_from_x = acos(dot_vx/(vvec2_length(v)))*-1; 
 			else { // NOTE: remove block where u and v are parallel
 				// u and v are parallel 
 				if (dot_uv < 0) 
 					// angle between u and v is 180
-					angle_from_x = acos(dot_ux/(vvec2_length(u)*vvec2_length(V_I))); 
+					//angle_from_x = acos(dot_ux/(vvec2_length(u)*vvec2_length(V_I))); 
+					angle_from_x = acos(dot_ux/(vvec2_length(u))); 
 				else return; // angle between u and v is 0
 			}
 			printf("POSITIVE: angle1: %f. angle2: %f\n", 
@@ -413,21 +510,26 @@ void vdraw_polygon_angle(VDrawContext ctx, VPolygon polygon, const int vertex)
 			double det_vu = vvec2_det(v, u);
 			if (det_vu < 0 && det_xv < 0) 
 				// u is to the left hand of v and v is to the left hand of x
-				angle_from_x = acos(dot_vx/(vvec2_length(v)*vvec2_length(V_I)))*-1; 
+				//angle_from_x = acos(dot_vx/(vvec2_length(v)*vvec2_length(V_I)))*-1; 
+				angle_from_x = acos(dot_vx/(vvec2_length(v)))*-1; 
 			else if (det_vu < 0 && det_xv >= 0) 
 				// u is to the left hand of v and v is to the right hand of x
-				angle_from_x = acos(dot_vx/(vvec2_length(v)*vvec2_length(V_I))); 
+				//angle_from_x = acos(dot_vx/(vvec2_length(v)*vvec2_length(V_I))); 
+				angle_from_x = acos(dot_vx/(vvec2_length(v))); 
 			else if (det_vu > 0 && det_xu < 0) 
 				// u is to the right hand of v and left hand of x
-				angle_from_x = acos(dot_ux/(vvec2_length(u)*vvec2_length(V_I)))*-1; 
+				//angle_from_x = acos(dot_ux/(vvec2_length(u)*vvec2_length(V_I)))*-1; 
+				angle_from_x = acos(dot_ux/(vvec2_length(u)))*-1; 
 			else if (det_vu > 0 && det_xu >= 0) 
 				// u is to the right hand of v and right hand of x
-				angle_from_x = acos(dot_ux/(vvec2_length(u)*vvec2_length(V_I))); 
+				//angle_from_x = acos(dot_ux/(vvec2_length(u)*vvec2_length(V_I))); 
+				angle_from_x = acos(dot_ux/(vvec2_length(u))); 
 			else { // NOTE: remove block where u and v are parallel because that is not possible in a valid polygon
 				// u and v are parallel
 				if (dot_uv < 0) 
 					// angle between u and v is 180
-					angle_from_x = acos(dot_ux/(vvec2_length(u)*vvec2_length(V_I)))*-1; 
+					//angle_from_x = acos(dot_ux/(vvec2_length(u)*vvec2_length(V_I)))*-1; 
+					angle_from_x = acos(dot_ux/(vvec2_length(u)))*-1; 
 				else return; // angle between u and v is 0
 			}
 			printf("NEGATIVE: angle1: %f. angle2: %f\n",
@@ -449,7 +551,7 @@ void vdraw_polygon_angle(VDrawContext ctx, VPolygon polygon, const int vertex)
 		};
 		VDrawStyleInfo settings = {
 			.lw = 0.05,
-			.color = (RGBA_t){c[2], c[1], c[0], c[3]},
+			.color = (RGBA_t){c.b, c.b, c.r, c.a},
 			.fill = false
 		};
 		VPolygon angle_poly = vpolygon_create(angle_vertices, 
@@ -509,7 +611,14 @@ int main(int argc, char* argv[])
 	vdraw_polygon_angle(ctx, poly2, 1);
 	vdraw_polygon_angle(ctx, poly2, 0);
 	vdraw_polygon_angle(ctx, poly2, 2);
-	vdraw_polygon(ctx, poly2);	
+	puts("HELLO WORLD");
+	vdraw_polygon(ctx, poly2);
+	VAnnotationInfo annoinfo1 = {};
+	VAnnotation annotation1 = vannotation_create("A", &annoinfo1);
+	//vvec2_annotate(ctx, vertices2[2], annotation1);
+	// TODO: fix indices changing after removing the endpoint (if endpoint is a closing point)
+	vvec2_annotate_to(ctx, vertices2[2], annotation1, V_DOWN);
+	vvec2_annotate_to(ctx, vertices2[1], annotation1, V_UP+V_RIGHT);
 
 	vdraw_save(ctx);
 	vdraw_destroy(ctx);
