@@ -86,6 +86,7 @@ typedef struct VAnnotationInfo {
 	/* CAIRO_FONT_WEIGHT_NORMAL
 	 * CAIRO_FONT_WEIGHT_BOLD */
 	cairo_font_weight_t weight;
+	const char *face;
 } VAnnotationInfo;
 
 struct VAnnotationInterface {
@@ -135,20 +136,11 @@ void vannotation_set_style(VDrawContext ctx, VAnnotation annotation)
 {
 	struct VAnnotationInterface *anno = &_VDRAW_ANNOTATIONS[annotation];
 
-	/*
-	if (anno->settings) {
-		anno->settings = (VAnnotationInfo) {
-			.size = 12.0,
-			.slant = CAIRO_FONT_SLANT_NORMAL,
-			.weight = CAIRO_FONT_WEIGHT_BOLD
-		}
-	}*/
-
 	VDrawStyleInfo styleinfo = {};	
 	vdraw_set_style(ctx, &styleinfo);
 
 	if (anno->settings.size) cairo_set_font_size(ctx->cr, anno->settings.size);
-	else {cairo_set_font_size(ctx->cr, (ctx->width+ctx->height)*0.02); puts("HELLODOSJFODJFOSJ");}
+	else cairo_set_font_size(ctx->cr, (ctx->width+ctx->height)*0.02);
 
 	cairo_font_slant_t slant;
 	if (anno->settings.slant) slant = anno->settings.slant;
@@ -159,7 +151,8 @@ void vannotation_set_style(VDrawContext ctx, VAnnotation annotation)
 	else weight = CAIRO_FONT_WEIGHT_BOLD;
 
 	/*("serif", "sans-serif", "cursive", "fantasy", "monospace")*/
-	cairo_select_font_face(ctx->cr, "sans-serif", slant, weight);
+	if (anno->settings.face) cairo_select_font_face(ctx->cr, anno->settings.face, slant, weight);
+	else cairo_select_font_face(ctx->cr, "sans-serif", slant, weight);
 }
 
 inline double vvec2_dot(const vvec2 u, const vvec2 v) 
@@ -580,15 +573,22 @@ int main(int argc, char* argv[])
 
 	VDrawStyleInfo settings = {
 		.lw = 0.05,
-		.color = {0.6, 0.1, 0.1, 1.0},
+		.color = {0.75, 0.2, 0.3, 1.0},
 		.fill = true
 	};
 
+	/*("serif", "sans-serif", "cursive", "fantasy", "monospace")*/
+	VAnnotationInfo annoinfo1 = {};
+	VAnnotationInfo annoinfo2 = {
+		.size = (ctx->width+ctx->height)*0.015,
+		.face = "serif"
+	};
+
 	vvec2 vertices[] = {
-		{0.0, 0.0},
 		{4.0, 4.0},
-		{4.0, -2.0},
-		{0.0, 0.0}
+		{0.0, 4.0},
+		{0.0, -4.0},
+		{4.0, 4.0}
 	};
 	vvec2_to_image_coordinates(ctx, vertices, vertex_count);
 
@@ -597,13 +597,15 @@ int main(int argc, char* argv[])
 	vdraw_polygon_angle(ctx, poly, 0);
 	vdraw_polygon_angle(ctx, poly, 2);
 	vdraw_polygon(ctx, poly);	
+	//VAnnotation annotationd = vannotation_create("D", &annoinfo1);
+	//vvec2_annotate_to(ctx, vertices[0], annotationd, (V_DOWN+V_RIGHT)*2.5);
 
 	const size_t vertex_count2 = 4;
 	vvec2 vertices2[] = {
-		{-4.0, -3.0},
-		{-1.0, -3.0},
-		{-1.0, 2.0},
-		{-4.0, -3.0}
+		{-4.0, 4.0},
+		{0.0, 4.0},
+		{0.0, -4.0},
+		{-4.0, 4.0}
 	};
 	vvec2_to_image_coordinates(ctx, vertices2, vertex_count2);
 
@@ -611,15 +613,16 @@ int main(int argc, char* argv[])
 	vdraw_polygon_angle(ctx, poly2, 1);
 	vdraw_polygon_angle(ctx, poly2, 0);
 	vdraw_polygon_angle(ctx, poly2, 2);
-	puts("HELLO WORLD");
 	vdraw_polygon(ctx, poly2);
-	VAnnotationInfo annoinfo1 = {};
-	VAnnotation annotation1 = vannotation_create("A", &annoinfo1);
+	VAnnotation annotation1 = vannotation_create("h", &annoinfo1);
+	VAnnotation annotation3 = vannotation_create("b1", &annoinfo1);
+	VAnnotation annotation4 = vannotation_create("b2", &annoinfo1);
 	//vvec2_annotate(ctx, vertices2[2], annotation1);
 	// TODO: fix indices changing after removing the endpoint (if endpoint is a closing point)
-	vvec2_annotate_to(ctx, vertices2[2], annotation1, V_DOWN);
-	vvec2_annotate_to(ctx, vertices2[1], annotation1, V_UP+V_RIGHT);
-
+	vvec2_annotate_to(ctx, vertices2[1], annotation1, (V_UP*11.0)+(V_LEFT*1.3));
+	vvec2_annotate_to(ctx, vertices2[1], annotation3, (V_DOWN*1.5)+(V_RIGHT*6.5));
+	vvec2_annotate_to(ctx, vertices2[1], annotation4, (V_DOWN*1.5)+(V_LEFT*6.5));
+	
 	vdraw_save(ctx);
 	vdraw_destroy(ctx);
 	
