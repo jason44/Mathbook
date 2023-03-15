@@ -120,9 +120,17 @@ size_t _VDRAW_POLYGONS_SIZE = 0;
 struct VAnnotationInterface _VDRAW_ANNOTATIONS[VDRAW_MAX_ANNOTATIONS];
 size_t _VDRAW_ANNOTATIONS_SIZE = 0;
 
+#ifdef _SUPPORT_UTF8_
+#define V_THETA (const char *){0xCE, 0xB8}
+#define V_PHI (const char *){0xCF, 0x95}
+#define V_SUB_ONE (const char *){0xE2, 0x82, 0x81}
+#define V_SUP_ONE (const char *){0xC2, 0xB9}
+#define V_INTEGRAL (const char *){0xE2, 0x88, 0xAB},
+#endif
+
 void vdraw_set_style(VDrawContext ctx, VDrawStyleInfo *settings);
 
-VAnnotation vannotation_create(const char *label, VAnnotationInfo *info)
+VAnnotation vannotation_create(const char *label, const VAnnotationInfo *info)
 {
 	assert(_VDRAW_ANNOTATIONS_SIZE < VDRAW_MAX_ANNOTATIONS);
 	_VDRAW_ANNOTATIONS[_VDRAW_ANNOTATIONS_SIZE] = (struct VAnnotationInterface){
@@ -190,6 +198,18 @@ void vvec2_to_image_coordinates(VDrawContext ctx,
 	}
 }
 
+inline void vvec2_flip_horizontal(vvec2 *vertices, size_t vertex_count)
+{
+	for (size_t i = 0; i < vertex_count; i++) 
+		vertices[i].y *= -1;
+}
+
+inline void vvec2_flip_vertical(vvec2 *vertices, size_t vertex_count)
+{
+	for (size_t i = 0; i < vertex_count; i++) 
+		vertices[i].x *= -1;
+}
+
 void vvec2_annotate(VDrawContext ctx, const vvec2 vertex, VAnnotation annotation)
 {
 	// cairo_text_path() <- text to path which can be filled 
@@ -202,6 +222,16 @@ void vvec2_annotate(VDrawContext ctx, const vvec2 vertex, VAnnotation annotation
     cairo_move_to (ctx->cr, vertex.x - (te.width/2) , vertex.y + (te.height/2));
 	cairo_show_text(ctx->cr, anno->label);
 	cairo_fill(ctx->cr);
+}
+
+void vvec2_annotate_label(const char* label, VDrawContext ctx, const vvec2 vertex, const VAnnotationInfo *info)
+{
+	const VAnnotationInfo *_info;
+	const VAnnotationInfo temp_info= {};
+	if (info) _info = info;
+	else _info = &temp_info;
+	VAnnotation anno = vannotation_create(label, _info);
+	vvec2_annotate(ctx, vertex, anno);
 }
 
 void vvec2_annotate_to(VDrawContext ctx, vvec2 vertex, 
@@ -615,14 +645,16 @@ int main(int argc, char* argv[])
 	vdraw_polygon_angle(ctx, poly2, 2);
 	vdraw_polygon(ctx, poly2);
 	VAnnotation annotation1 = vannotation_create("h", &annoinfo1);
-	VAnnotation annotation3 = vannotation_create("b1", &annoinfo1);
+	char theta[] = {0xCE, 0xB8};
+	puts("LIKE");
+	//printf("char *: %c", theta[0]);
+	VAnnotation annotation3 = vannotation_create(V_THETA, &annoinfo1);
 	VAnnotation annotation4 = vannotation_create("b2", &annoinfo1);
 	//vvec2_annotate(ctx, vertices2[2], annotation1);
 	// TODO: fix indices changing after removing the endpoint (if endpoint is a closing point)
 	vvec2_annotate_to(ctx, vertices2[1], annotation1, (V_UP*11.0)+(V_LEFT*1.3));
 	vvec2_annotate_to(ctx, vertices2[1], annotation3, (V_DOWN*1.5)+(V_RIGHT*6.5));
 	vvec2_annotate_to(ctx, vertices2[1], annotation4, (V_DOWN*1.5)+(V_LEFT*6.5));
-	
 	vdraw_save(ctx);
 	vdraw_destroy(ctx);
 	
