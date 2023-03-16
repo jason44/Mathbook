@@ -37,6 +37,8 @@ typedef float* RGBA;
 typedef uint32_t VPolygon;
 typedef uint32_t VAnnotation;
 
+typedef double (*VFunction)(double);
+
 typedef struct {
 	float r, g, b, a;
 } RGBA_t;
@@ -282,9 +284,23 @@ inline vvec3 vvec3_cross(vvec3 u, vvec3 v)
 	};
 }
 
+#define vline_length vedge_length
 inline double vedge_length(const VEdge edge)
 {
 	return vvec2_length((vvec2){edge.p.x - edge.q.x, edge.p.y - edge.q.y});
+}
+
+
+inline VFunction vline_point(VDrawContext ctx, const VLine line, const double ratio_from_end)
+{	
+	// subtract origin from center to get distance from 
+	const vvec2 origin = {ctx->width/2.0, ctx->height/2.0};
+	const vvec2 center = {(line.p.x + line.q.x) / 2.0, (line.p.y + line.q.y) / 2.0};
+	const vvec2 offset = {center.x - origin.x, center.y - origin.y};
+
+	const double slope = (line.p.y-line.q.y)/(line.p.x-line.q.x);
+	//const double yint = 
+	
 }
 
 VPolygon vpolygon_create(vvec2 *vertices, const size_t vertex_count, 
@@ -415,7 +431,7 @@ void vdraw_set_style(VDrawContext ctx, VDrawStyleInfo *style)
 void vdraw_dot(VDrawContext ctx, vvec2 point, VDrawStyleInfo *style)
 {
 	vdraw_set_style(ctx, style);
-	cairo_arc(ctx->cr, point.x, point.y, style->lw*1.6, 0, 2*M_PI);
+	cairo_arc(ctx->cr, point.x, point.y, style->lw*1.6, 0.0, 2.0*M_PI);
 	// swap red and blue for contrast
 	cairo_set_source_rgba(ctx->cr, style->color.r, style->color.g, style->color.b, 1.0);
 	cairo_fill(ctx->cr);
@@ -442,8 +458,10 @@ void vdraw_line(VDrawContext ctx, VLine line, VDrawStyleInfo *style)
 void vdraw_perpendicular_bisector(VDrawContext ctx, VLine line,
 	const double distance, VDrawStyleInfo *style)
 {
-	vvec2 bisector = {(line.p.x - line.q.x) / 2.0, (line.p.y - line.q.y) / 2.0};
-	VLine pb = {bisector, {line.p.x*-1, line.p.y}};
+	const vvec2 bisector = {(line.p.x + line.q.x) / 2.0, (line.p.y + line.q.y) / 2.0};
+	vvec2 u = {(line.p.x-line.q.x)*-1, line.p.y-line.q.y};
+	const vvec2 v = vvec2_normalize(u);
+	VLine pb = {bisector, {(v.x+bisector.x)+distance-1, (v.y+bisector.y)-distance+1}};
 	vdraw_line(ctx, pb, style);
 }
 
@@ -458,8 +476,8 @@ void vdraw_polygon(VDrawContext ctx, VPolygon polygon)
 	vvec2 *vertices = poly->vertices;
 	size_t vertex_count = poly->vertex_count;
 
-	for (size_t k = 0; k < vertex_count; k++) printf("(%f, %f)\n", 
-		vertices[k].x, vertices[k].y);	
+	for (size_t k = 0; k < vertex_count; k++) 
+		printf("(%f, %f)\n", vertices[k].x, vertices[k].y);	
 	puts("--------------");
 
 	cairo_move_to(ctx->cr, vertices[0].x, vertices[0].y);
@@ -712,6 +730,7 @@ int main(int argc, char* argv[])
 	vvec2_to_image_coordinates(ctx, (vvec2 *)&line2, 2);
 	vdraw_line(ctx, line2, &style);
 	vdraw_perpendicular_bisector(ctx, line, 2.5, &style);
+	vdraw_dot(ctx, (vvec2){0.0, 0.0}, &style);
 	vdraw_save(ctx);
 	vdraw_destroy(ctx);
 	
