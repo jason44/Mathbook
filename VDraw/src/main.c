@@ -45,6 +45,10 @@ typedef struct vvec2 {
 	float x, y;
 } vvec2;
 
+typedef struct vvec3 {
+	float x, y, z;
+} vvec3;
+
 typedef struct VEdge {
 	vvec2 p, q;
 } VEdge;
@@ -122,11 +126,11 @@ struct VAnnotationInterface _VDRAW_ANNOTATIONS[VDRAW_MAX_ANNOTATIONS];
 size_t _VDRAW_ANNOTATIONS_SIZE = 0;
 
 #ifdef _SUPPORT_UTF8_
-#define V_THETA (const char *){0xCE, 0xB8}
-#define V_PHI (const char *){0xCF, 0x95}
-#define V_SUB_ONE (const char *){0xE2, 0x82, 0x81}
-#define V_SUP_ONE (const char *){0xC2, 0xB9}
-#define V_INTEGRAL (const char *){0xE2, 0x88, 0xAB},
+#define V_THETA "\xCE\xB8"
+#define V_PHI "\xCF\x95"
+#define V_SUB_ONE "\xE2\x82\x81"
+#define V_SUP_ONE "\xC2\xB9"
+#define V_INTEGRAL "\xE2\x88\xAB"
 #endif
 
 void vdraw_set_style(VDrawContext ctx, VDrawStyleInfo *style);
@@ -172,6 +176,12 @@ inline double vvec2_dot(const vvec2 u, const vvec2 v)
 inline double vvec2_length(const vvec2 u)
 {
 	return sqrt(pow(u.x, 2) + pow(u.y, 2));
+}
+
+inline vvec2 vvec2_normalize(const vvec2 u)
+{
+	const double u_len = vvec2_length(u);
+	return (vvec2){u.x/u_len, u.y/u_len};
 }
 
 /*********************************************
@@ -261,6 +271,15 @@ void vvec2_annotate_label_to(const char* label, VDrawContext ctx, const vvec2 ve
 	else _info = &temp_info;
 	VAnnotation anno = vannotation_create(label, _info);
 	vvec2_annotate_to(ctx, vertex, anno, direction);
+}
+
+inline vvec3 vvec3_cross(vvec3 u, vvec3 v)
+{
+	return (vvec3){
+		(u.y*v.z) - (u.z*v.y),
+		((u.x*v.z) - (u.z*v.x)) * -1,
+		(u.x*v.y)-(u.y*v.z)
+	};
 }
 
 inline double vedge_length(const VEdge edge)
@@ -393,33 +412,39 @@ void vdraw_set_style(VDrawContext ctx, VDrawStyleInfo *style)
 
 }
 
-void vdraw_dot(VDrawContext ctx, VDrawStyleInfo *style, vvec2 point)
+void vdraw_dot(VDrawContext ctx, vvec2 point, VDrawStyleInfo *style)
 {
 	vdraw_set_style(ctx, style);
-	vvec2_to_image_coordinates(ctx, &point, 1);
-	//cairo_move_to(ctx->cr);
-	cairo_arc(ctx->cr, point.x, point.y, style->lw*0.6, 0, 2*M_PI);
+	cairo_arc(ctx->cr, point.x, point.y, style->lw*1.6, 0, 2*M_PI);
+	// swap red and blue for contrast
 	cairo_set_source_rgba(ctx->cr, style->color.r, style->color.g, style->color.b, 1.0);
 	cairo_fill(ctx->cr);
 }
 
-void vdraw_lineseg(VDrawContext ctx, VDrawStyleInfo *style, VLine line)
+void vdraw_line(VDrawContext ctx, VLine line, VDrawStyleInfo *style)
 {
 	if (line.p.x == line.q.x && line.p.y == line.q.y) goto ERROR_EXIT;
 	vdraw_set_style(ctx, style);
-	vvec2_to_image_coordinates(ctx, (vvec2 *)&line, 2);
 	cairo_move_to(ctx->cr, line.p.x, line.p.y);
 	cairo_line_to(ctx->cr, line.q.x, line.q.y);
 	cairo_stroke(ctx->cr);
-	vdraw_dot(ctx, style, line.p);
-	vdraw_dot(ctx, style, line.q);
 
+	vdraw_dot(ctx, line.p, style);
+	vdraw_dot(ctx, line.q, style);
 	return;
 
 	ERROR_EXIT: {
 		vdraw_destroy(ctx);
 		exit(EXIT_FAILURE);
 	}
+}
+
+void vdraw_perpendicular_bisector(VDrawContext ctx, VLine line,
+	const double distance, VDrawStyleInfo *style)
+{
+	vvec2 bisector = {(line.p.x - line.q.x) / 2.0, (line.p.y - line.q.y) / 2.0};
+	VLine pb = {bisector, {line.p.x*-1, line.p.y}};
+	vdraw_line(ctx, pb, style);
 }
 
 void vdraw_polygon(VDrawContext ctx, VPolygon polygon)
@@ -448,7 +473,7 @@ void vdraw_polygon(VDrawContext ctx, VPolygon polygon)
 	if (poly->style.fill) {
 		RGBA_t c = poly->style.color;
 		cairo_stroke_preserve(ctx->cr);
-		cairo_set_source_rgba(ctx->cr, c.r, c.g, c.b, 0.25);
+		cairo_set_source_rgba(ctx->cr, c.r, c.g, c.b, 0.15);
 		cairo_fill(ctx->cr);
 	} else cairo_stroke(ctx->cr);
 
@@ -625,7 +650,6 @@ int main(int argc, char* argv[])
 	};
 	VDrawContext ctx = vdraw_create(&info);
 
-	const size_t vertex_count = 4;
 
 	VDrawStyleInfo style = {
 		.lw = 0.05,
@@ -639,7 +663,8 @@ int main(int argc, char* argv[])
 		.size = (ctx->width+ctx->height)*0.015,
 		.face = "serif"
 	};
-
+	/*
+	const size_t vertex_count = 4;
 	vvec2 vertices[] = {
 		{4.0, 4.0},
 		{0.0, 4.0},
@@ -671,9 +696,7 @@ int main(int argc, char* argv[])
 	vdraw_polygon_angle(ctx, poly2, 2);
 	vdraw_polygon(ctx, poly2);
 	VAnnotation annotation1 = vannotation_create("h", &annoinfo1);
-	char theta[] = {0xCE, 0xB8};
 	puts("LIKE");
-	//printf("char *: %c", theta[0]);
 	VAnnotation annotation3 = vannotation_create(V_THETA, &annoinfo1);
 	VAnnotation annotation4 = vannotation_create("b2", &annoinfo1);
 	//vvec2_annotate(ctx, vertices2[2], annotation1);
@@ -681,6 +704,14 @@ int main(int argc, char* argv[])
 	vvec2_annotate_to(ctx, vertices2[1], annotation1, (V_UP*11.0)+(V_LEFT*1.3));
 	vvec2_annotate_to(ctx, vertices2[1], annotation3, (V_DOWN*1.5)+(V_RIGHT*6.5));
 	vvec2_annotate_to(ctx, vertices2[1], annotation4, (V_DOWN*1.5)+(V_LEFT*6.5));
+	*/
+	VLine line = {{-3.95, -3.95}, {3.95, 3.95}};
+	vvec2_to_image_coordinates(ctx, (vvec2 *)&line, 2);
+	vdraw_line(ctx, line, &style);
+	VLine line2 = {{-2.56, 2.45}, {3.95, 3.95}};
+	vvec2_to_image_coordinates(ctx, (vvec2 *)&line2, 2);
+	vdraw_line(ctx, line2, &style);
+	vdraw_perpendicular_bisector(ctx, line, 2.5, &style);
 	vdraw_save(ctx);
 	vdraw_destroy(ctx);
 	
