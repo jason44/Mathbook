@@ -1,7 +1,10 @@
 plots/*.pdf
-plots/__pycache__/
+plots/__pycache__
 plots/*.swp
 *.swp
 VDrawrs/target
 *a.out*
 VDraw/src/*.pdf
+.*swp*
+sm_videos/media
+sm_videos/__pycache__
