@@ -595,6 +595,51 @@ Show that the hypotenuse of a right triangle is greater than or equal to the len
 
 }
 
+\subsection{Congruence}
+
+\hspace{\parindent}A \textbf{mapping} of a set $A$ onto itself is an association between a point $P$ onto another point $Q$ where $P$ and $Q$ are both in $A$ .
+A mapping is represented with a special arrow $P \mapsto Q$. Here, $Q$ is the value of the mapping at $P$, or $Q$ corresponds to $P$ under the mapping, or that $P$ is mapped on $Q$.
+
+A mapping is also known as a \textbf{function}, denoted as $F(P)$ where $F$ is a symbol denoting the function and $P$ is a value that is within the \textbf{domain} of the function; the domain being the set of all values where $F$ is defined.\medskip
+
+\dfn{}{
+    \begin{enumerate}
+    \item A mapping $F$ corresponds to another mapping $G$ if and only if $F(P)=G(P)$ for all values $P$.
+    \item If a mapping $f$ maps every value in the set onto a constant $C$, then we say that $F$ is a constant mapping.
+    \item The identity mapping of $F$, denoted with $I$ is a mapping such that $I(F(P))$ for all values $P$.
+    \item The identity mapping of $F$, denoted with $I$ is a mapping such that $I(F(P))$ for all values $P$.
+    \end{enumerate}
+}
+
+Suppose that $F$ is a mapping of a set $A$ onto itself, we denote it as $F: A \rightarrow A$. For now, suppose that the mapping is that of a plane onto itself; that is, $F: X^2 \rightarrow X^2$. We say that $F$ is \textit{distance perserving} if and only if for every pair of points $P$ and $Q$ in $X$, the distance between $P$ and $Q$ is equal to the distance between $F(P)$ and $F(Q)$. Mappings that satisfy said biconditional are known as \textbf{isometries}.
+
+\thm{}{
+Assuming that $F$ is an \textit{isometry}, the line segment formed by points $P$ and $Q$, $\overline{PQ}$, under the mapping $F$ is the line segment formed by the mapping of $F(P)$ and $F(Q)$.
+}
+\pf{Proof}{
+    Let $R$ be any point on the line $\overline{PQ}$. Since an isometry preserves distance, we know that the distance of the line formed by $P$ and $R$ and the line formed by $F(P)$ and $F(R)$ are equal. Likewise, the distance between the line formed by $R$ and $Q$ is equal to the line formed by $F(R)$ and $F(Q)$. Therefore, $(P,R)+(R,Q)=(F(P),F(R))+(F(R),F(Q))$, or $(P,Q)=(F(P),F(Q)$. Since $R$ lies on $\overline{PQ}$ and $F(R)$ lies on the line segment formed by $F(P)$ and $F(Q)$ then $F(P)$ and $F(Q)$ form a line segment $\overline{F(P)F(Q)}$.
+
+    To prove that every point on $\overline(F(P),F(Q))$ can be expressed as a mapping under $F$ of $R \in \overline{PQ}$. Let $F(R)$ be a point on the segment that is $d$ distance from $F(P)$ and let $R$ be a point on $\overline{PQ}$ that is $d$ distance from $P$. Since $F(P)$ is a mapping of $P$ under $F$, it follows that $F(R)$ is a mapping of $R$ under $F$.
+}
+
+A \textbf{fixed point} is a point $P$ such that $P=F(P)$.
+\thm{}{
+Assuming that $F$ is an \textit{isometry}, suppose that $P$ and $Q$ are distinct points that are fixed. Then every point on $\overline{PQ}$ is a fixed point of $F$.
+}
+\pf{Proof}{
+    First we note that if $M$ lies on the segment $(P, Q)$, then $(P, M) = (P, F(M))$ and $(M, Q) = (F(M), Q)$ since isometries preserve distance. Thus, $(P, F(M))+(F(M), Q)=(P, Q)$ which means that $F(M)$ lies on $(P, Q)$. It follows that $M=F(M)$.
+
+    Next consider the situation when $M$ does not lie on the segment $(P, Q)$, but instead lies on a ray passing through $P$ and $Q$. Then $(P, M)=(P, F(M))$ and $(P, F(M))=(P, Q)+(Q, F(M))$. It follows that $P$, $Q$, and $F(M)$ lie on the same line segment and that $M=F(M)$. If $M$ lies on the ray from $Q$ through $P$, the proof is similar, but with $P$ and $Q$ swapped.
+}
+
+When we apply two isometries to a plane, we \textbf{compose} them. Symbolically, we can write it as $F(G(P))$ where $F$ and $G$ are isometries. We can represent the composite of $F$ and $G$ as a mapping of a point $P$ on the plane.$P \mapsto F(G(P))$. This mapping is called the composite of $G$ and $F$ and is denoted as $F \circ G$.
+
+
+
+\qs{}{
+Let $\mathscr{l}$ and $\mathscr{s}$ be parallel lines. Prove that $F(\mathscr{l})$ and $F(\mathscr{s})$ are parallel if $F$ is an isometry.
+}
+
 \newpage
 
 \chapter{Solutions}
@@ -694,7 +739,7 @@ Since the factors of $n!$ has at least one even number, $n!$ is even.
 Given two points $P, Q$ and an arbitrary point $R$. The line segments $\overline{PR}$ and $\overline{QR}$ are equal \textit{iff} $R$ lies in the perpendicular bisector of $\overline{PQ}$.
 
 \begin{center}
-    \includegraphics[width=0.35\textwidth]{congruent_triangles.pdf}
+    \includegraphics[width=0.30\textwidth]{congruent_triangles.pdf}
 \end{center}
 
 Notice that if $R$ lies on the perpendicular bisector of $\overline{PQ}$, then
@@ -711,7 +756,7 @@ Thus, $\overline{PM} = \overline{MQ}$. Which proves that $M$ bisects $\overline{
 Prove that the sum of angles of a triangle equal $180 \degree$.\\
 
 \begin{center}
-    \includegraphics[width=0.4\textwidth]{sumangles.pdf}
+    \includegraphics[width=0.35\textwidth]{sumangles.pdf}
 \end{center}
 
 We begin by splitting the generic triangle into two right triangles by drawing an \textit{altitude}. In deciding the altitude, we choose to draw the altitude that passes through the vertex with the largest angle. This gurantees that the altitude will always be inside the triangle. Notice that $D+b=90 \degree$ because the sum of angles other than the right angle is $90 \degree$. Likewise, $A+a=90 \degree$. Therefore, $D+b+A+a=180$.
@@ -725,6 +770,7 @@ Prove that the area of a generic triangle is equal to half its base times height
 
 \hspace{\parindent}We draw an altitude across the triangle such that it is split into two right triangles. The area of the whole triangle is $\frac{b_1 h}{2} + \frac{b_2 h}{2}$, or $\frac{h(b_1+b_2)}{2}=\frac{bh}{2}$.
 }
+ji
 
 \as{}{
 \textbf{(a.)} Show that the hypotenuse of a right triangle is greater than or equal to the length of either of its legs.
@@ -736,6 +782,19 @@ Let $P$ be a point and let $L$ be a line. Show that the smallest distance betwee
 
 The proof follows from \textbf{(a.)}
 }
+
+\as{}{
+Let $\mathscr{l}$ and $\mathscr{s}$ be parallel lines. Prove that $F(\mathscr{l})$ and $F(\mathscr{s})$ are parallel if $F$ is an isometry.
+
+Since the shortest distance between two points is a straight line and isometries are distance preserving, $F(\mathscr{l})$ and $F(\mathscr{s})$ must be parallel. If they were not parallel, then the distances between endpoints would be different which would contradict our assumption that $F$ is an isomorphism.
+}
+
+\as{}{
+Let $\mathscr{l}$ and $\mathscr{s}$ be perpendicular lines. Prove that $F(\mathscr{l})$ and $F(\mathscr{s})$ are perpendicular if $F$ is an isometry.
+
+If we let the two lines intersect at an endpoint, We can model the distance between the distinct endpoints of the two lines as $\mathscr{c}$ in the equation $\mathscr{l}^2+\mathscr{s}^2=\mathscr{c}^2$. Suppose that $\mathscr{l}$ and $\mathscr{s}$ are not perpendicular. Then if the angle between the two is acute, the distance between the distinct endpoints can be modeled as $\matscr{c}$ in the equation $\mathscr{a}^2+\mathscr{b}^2=\mathscr{c}^2$ where $\mathscr{a}$ is the altitude of the triangle formed by $\mathscr{l}$, $\mathscr{s}$ and $\mathscr{b}$ is the line from the distinct endpoints of $\mathscr{l}$ and $\mathscr{s}$. On the otherhand, if the angle is obtuse, the distance between the two endpoints can be modeled as $\mathscr{c}$ in the equation $\mathscr{h}^2+(\mathscr{w}+\mathscr{s})^2=c^2$ where $\mathscr{h}$ and $\mathscr{w}$ is the height and width of the distinct endpoint of $\mathscr{l}$ respectively. Therefore, we've shown that the distance between distinct endpoints differ when $\mathscr{l}$ and $\mathscr{s}$ are not perpendicular.
+}
+
 \iffalse
 \textit{axiom of pairing} states that given a set $A$ and $B$, there is a set $D$ that contains $A$ and $B$. In set notation, $\forall A \forall B \exists D \ni ((A \in D) \wedge (B \in D))$.%%%
 \fi

@@ -8,3 +8,11 @@ VDraw/src/*.pdf
 .*swp*
 sm_videos/media
 sm_videos/__pycache__
+template.aux
+template.log
+template.dvi
+template.*.*
+template.fdb_latexmk
+template.fls
+template.pdf
+template.toc
