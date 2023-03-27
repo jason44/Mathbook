@@ -595,7 +595,7 @@ Show that the hypotenuse of a right triangle is greater than or equal to the len
 
 }
 
-\subsection{Congruence}
+\section{Congruence}
 
 \hspace{\parindent}A \textbf{mapping} of a set $A$ onto itself is an association between a point $P$ onto another point $Q$ where $P$ and $Q$ are both in $A$ .
 A mapping is represented with a special arrow $P \mapsto Q$. Here, $Q$ is the value of the mapping at $P$, or $Q$ corresponds to $P$ under the mapping, or that $P$ is mapped on $Q$.
@@ -639,6 +639,88 @@ When we apply two isometries to a plane, we \textbf{compose} them. Symbolically,
 \qs{}{
 Let $\mathscr{l}$ and $\mathscr{s}$ be parallel lines. Prove that $F(\mathscr{l})$ and $F(\mathscr{s})$ are parallel if $F$ is an isometry.
 }
+
+\chapter{Miscellaneous}
+
+\newpage
+
+\section{Matrices and Linear Maps}
+\dfn{}{
+Linear Maps are mappings that have the following properties:
+\begin{enumerate}
+ \item Parallel lines stay parallel.
+ \item Even spacing is preserved ie: even if the spacing between two points change, the spacing between all points is changed consistently.
+ \item The origin is fixed in place.
+\end{enumerate}
+}\bigskip
+
+\dfn{}{
+A \textbf{vector space} is a set of vectors that satisfy the \textit{field axioms}. There are $6$ field axioms:
+\begin{enumerate}
+ \item Associativity of addition and multiplication: \\$a+(b+c)=(a+b)+c~~~~~~~a(bc)=(ab)c$
+ \item Commutativity of addition and multiplication: \\$a+b=b+a~~~~~~~ab=ba$
+ \item Additive and Multiplicative Identity: \\$\exists 0 \in F \ni a+0=a~~~~~~~\exists 1 \in F \ni a \cdot 1=1$
+ \item Additive Inverse: \\$\forall a \in F, \exists -a \ni a+(-a)=0$ Where $-a$ is called the additive inverse.
+
+ \item Multiplicative Inverse: \\$\forall a \in F, \exists a^{-1} \ni a \cdot a^{-1}=1$ Where $a^{-1}$ is called the multiplicative inverse.
+
+ \item Distributivity of multiplication over addition $a \cdot (b+c)=ab+ac$
+\end{enumerate}
+}\bigskip
+
+Given a set of elements $G$, A \textbf{linear combination} in a vector space $F$ is is an element in $F$ of the form $a_1g_1+a_2g_{2} \dots a_ig_i$ Where $a_i$ are scalars and $g_{i}\in G$.
+All vectors in a vector space $F$ can be represented as a linear combination of the \textbf{basis vectors} of $F$.
+
+The elements of a subset $G$ of $F$ are said to be \textbf{linearly independent} if they cannot be written as a linear combination of another element of $G$. Otherwise, they are \textbf{linearly dependent}.
+
+A \textbf{linear subspace} or vector subspace, $W$ of a vector space $V$ is a non-empty subset of $V$ that is \textit{closed} under vector addition and scalar multiplication. This implies that every linear combination of elements of $W$ belong to $W$.
+
+A subset of a vector space is a \textbf{basis} if its elements are linearly independent and *span* the vector space. All **bases** of a vector space have the same cardinality which is called the \textbf{dimension} of the vector space.
+
+Consider the basis vectors,
+\begin{center}
+$i=\begin{bmatrix}1 \\ 0 \\ 0\end{bmatrix}~j=\begin{bmatrix}0\\1\\0\end{bmatrix}~k=\begin{bmatrix}0\\0\\1\end{bmatrix}$.
+\end{center}
+The linear subspace formed by the three vectors is clearly $\mathbb{R^3}$. Thus, we say that the \textbf{span} of the vector space with basis $ijk$ is $\mathbb{R}^3$.
+
+Given a subset $G$ of a vector space $V$, the span of $G$ is the smallest linear subspace of $V$ that contains $G$. The span of $G$ is also the set of all linear combinations of elements of $G$.
+If $W$ is the span of $G$, then $G$ \textit{spans} or \textit{generates} $W$ and that $G$ is a \textit{spanning set} or generating set of $W$.
+
+The standard bases vectors for a vector space are known as the $ijk$ coordinates. But calling it $ijk$ limits the coordinates to three dimensions. To generalize it, the standard bases vectors for any $n$ dimensional vector space are the unit orthogonal vectors of that space. So in $\mathbb{R}^2$,
+\begin{center}$i = \begin{bmatrix}1 \\ 0\end{bmatrix}$ and $j = \begin{bmatrix}0 \\ 1\end{bmatrix}$\end{center}
+are the standard bases.
+A linear map from $ijk$ coordinates to another coordinate system is usually represented with matrices; this operation is called a linear transformation or a change of bases. Generally, multiplying any vector in the $ijk$ space by a transformation matrix gets us the output of the linear map. To see why this is true, we first note that every vector in the \textbf{span} of the vector space is a linear combination of the \textbf{bases} of the space. Therefore, we can write all vectors in terms of the bases vectors that we choose
+\begin{center}
+$\begin{bmatrix}x\\y\end{bmatrix}=a_1\begin{bmatrix}i_1\\i_2\end{bmatrix}+a_2\begin{bmatrix}j_{1}\\ j_2\end{bmatrix}$
+\end{center}
+From this information, we can replace $i$ and $j$ in the equation with the new basis vectors and we can do this with a very nice mathematical construct known as a \textbf{matrix}
+\begin{center}
+$\begin{bmatrix}a_1 & b_1 \\ a_2 & b_2\end{bmatrix}\begin{bmatrix}x \\ y\end{bmatrix}= x\begin{bmatrix}a_{1}\\ a_{2}\end{bmatrix}+y\begin{bmatrix}b_{1} \\ b_{2}\end{bmatrix} = \begin{bmatrix}a_{1}x+b_{1}y \\ a_{2}x+b_{2}y\end{bmatrix}$
+\end{center}
+But note that this is only true if the bases for $\begin{bmatrix}x & y\end{bmatrix}$ are the unit vectors. See why this is true. If the bases for the vector happen to be another transformation of the standard angles, we will need to find the original scalars which can be found with a system of linear equations which will be discussed later.
+
+\subsection{Determinant}
+The determinant can be described as a scalar that describes the factor in which a space changes in a given transformation.
+\begin{center}
+eg: $\begin{bmatrix}3 & 2 \\ 0 & 2\end{bmatrix}$ scales $ij$ by a factor of $6$. See why this is the case given the above definition.
+\end{center}
+Remember that in a linear transformation, gridlines remain parallel and evenly spaced (by the property that lines remain lines after a linear transformation) Therefore, the factor in which the bases are scaled after a change of base operation is the factor at which all other vectors will be scaled.
+This factor is known as the \textbf{determinant}.\medskip
+
+\mprop{}{
+The determinant is $0$ if it condenses all points in a $n$ dimensional  space into a $n-k$ dimensional space where $k \leq n$.
+}
+
+The determinant can also be a negative number. To explain, it is easier to start with the case where the vector space is $\mathbb{R}^2$.
+Notice that in the default orientation, the standard basis $j$ is to the left hand of $i$. If a transformation results in $j$ to the right hand of $i$, then we say that the transformation \textbf{inverses the orientation}. Whenever orientation is flipped, the determinant is negative. eg:
+\begin{center}
+$\begin{bmatrix}1 & 2 \\ 1 & -1\end{bmatrix}$
+\end{center}
+flips orientation because $i$ corresponds to $\begin{bmatrix}1 & 1\end{bmatrix}$ and $j$ corresponds to $\begin{bmatrix}2&-1\end{bmatrix}$ in the transformation and $\begin{bmatrix}2&-1\end{bmatrix}$ is obviously to the right hand of $\begin{bmatrix}1 & 1\end{bmatrix}$.
+
+For $\mathbb{R}^3$, the right hand rule for determinants states that the determinant is positive if the basis form a right hand coordinate system ie: if letting the index finger point to $i$ and the middle finger point to $j$, the thumb naturally points to $k$. We agree to say that in the default orientation $ijk$ is \textit{right handed}.
+
+Therefore, if you need to use your left hand so that the thumb faces $k$, then the basis form a left hand coordinate system and the determinant is negative.
 
 \newpage
 
@@ -770,7 +852,6 @@ Prove that the area of a generic triangle is equal to half its base times height
 
 \hspace{\parindent}We draw an altitude across the triangle such that it is split into two right triangles. The area of the whole triangle is $\frac{b_1 h}{2} + \frac{b_2 h}{2}$, or $\frac{h(b_1+b_2)}{2}=\frac{bh}{2}$.
 }
-ji
 
 \as{}{
 \textbf{(a.)} Show that the hypotenuse of a right triangle is greater than or equal to the length of either of its legs.

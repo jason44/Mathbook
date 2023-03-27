@@ -1,0 +1,40 @@
+
+/*
+/*********** FREE THE ALLOCATED ARRAY ***********/
+void vpolygon_calculate_edges(VPolygon polygon, VEdge *edges)
+{
+	struct VPolygonInterface *poly = &_VDRAW_POLYGONS[polygon];
+	assert(poly->vertices[1][0]);
+	for (size_t i = 1; i < poly->vertex_count; i ++) {
+		//edges[i] = (VEdge){poly->vertices[i], poly->vertices[i-1]
+		vedge_from_vertices(poly->vertices[i], poly->vertices[i-1], edges[i]);
+	}
+}
+
+/*********** FREE THE ALLOCATED ARRAY ***********/
+VEdge *vpolygon_calculate_edges_as_vectors(VPolygon polygon, size_t *edge_count)
+{
+	struct VPolygonInterface *poly = &_VDRAW_POLYGONS[polygon];
+	assert(poly->vertices[1][0]);
+
+	// close the polygon unless it is already closed
+	vvec2 *vertices = poly->vertices;
+	size_t vertex_count = poly->vertex_count;
+	vvec2 buf[vertex_count+1];
+	if (vertices[0][0] != vertices[vertex_count-1][0] &&
+		vertices[0][1] != vertices[vertex_count-1][1]) {
+		memcpy(buf, vertices, sizeof(vvec2)*(vertex_count));
+		buf[vertex_count] = (vvec2){vertices[0][0], vertices[0][1]};
+		vertices = buf;
+		++vertex_count;
+	}
+
+	vvec2 *edges = malloc(sizeof(vvec2)*(vertex_count-1));
+	for (size_t i = 1; i < poly->vertex_count; i++) {
+		edges[i] = (vvec2){poly->vertices[i][0] - poly->vertices[i-1][0], 
+			poly->vertices[i][1] - poly->vertices[i-1][1]
+		};	
+	}
+	*edge_count = vertex_count-1;
+	return edges;
+} 
