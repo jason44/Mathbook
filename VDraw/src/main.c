@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <math.h>
 #include <complex.h>
 #include <cairo/cairo.h>
@@ -18,18 +19,6 @@ gcc main.c -lcairo -lm -Wall -O2
 #define _V_DEBUG_
 #define _SUPPORT_UTF8_
 
-#define VDRAW_MAX_ANNOTATIONS 20
-#define VDRAW_MAX_POLYGONS 10
-#define VDRAW_STYLE_POLYGON (VDrawStyleInfo){}
-
-#define V_I (vvec2){1.0, 0.0}
-#define V_J (vvec2){0.0, 1.0}
-
-#define V_RIGHT CMPLX(1.0f, 0.0f)
-#define V_LEFT CMPLX(-1.0f, 0.0f)
-#define V_UP CMPLX(0.0f, 1.0f)
-#define V_DOWN CMPLX(0.0f, -1.0f)
-
 typedef struct VDrawContext* VDrawContext;
 typedef double complex vcomplex;
 typedef float* RGBA;
@@ -43,9 +32,9 @@ typedef struct {
 } RGBA_t;
 
 #define VDRAW_VEC(n) \
-typedef float vvec##n[n]; \
+typedef double vvec##n[n]; \
  \
-inline double vvec##n_dot(const vvec##n u, const vvec##n v) \
+inline double vvec##n##_dot(const vvec##n u, const vvec##n v) \
 { \
 	double dot = 0; \
 	for (int i = 0; i < n; i++) \
@@ -53,7 +42,7 @@ inline double vvec##n_dot(const vvec##n u, const vvec##n v) \
 	return dot; \
 } \
 \
-inline double vvec##n_len(const vvec##n u) \
+inline double vvec##n##_len(const vvec##n u) \
 { \
 	double inner = 0; \
 	for (int i = 0; i < n; i++) \
@@ -61,16 +50,42 @@ inline double vvec##n_len(const vvec##n u) \
 	return sqrtf(inner); \
 } \
  \
-inline void vvec##n_normalize(vvec##n u) \
+inline void vvec##n##_normalize(vvec##n u) \
 { \
-	const double len = vvec##n_len(u); \
+	const double len = vvec##n##_len(u); \
 	for (int i = 0; i < n; i++) \
 		u[i] /= len; \
 } \
+ \
+inline void vvec##n##_copy(vvec##n src, vvec##n dst) \
+{ \
+	memcpy(dst, src, sizeof(vvec##n)); \
+} \
 
+#define VDRAW_MAX_ANNOTATIONS 20
+#define VDRAW_MAX_POLYGONS 10
+#define VDRAW_STYLE_POLYGON (VDrawStyleInfo){}
+
+#define V_RIGHT CMPLX(1.0f, 0.0f)
+#define V_LEFT CMPLX(-1.0f, 0.0f)
+#define V_UP CMPLX(0.0f, 1.0f)
+#define V_DOWN CMPLX(0.0f, -1.0f)
+
+#define V_I (vvec2){1.0, 0.0}
+#define V_J (vvec2){0.0, 1.0}
+
+#ifdef _SUPPORT_UTF8_
+#define V_THETA "\xCE\xB8"
+#define V_PHI "\xCF\x95"
+#define V_SUB_ONE "\xE2\x82\x81"
+#define V_SUP_ONE "\xC2\xB9"
+#define V_INTEGRAL "\xE2\x88\xAB"
+#endif
 
 VDRAW_VEC(2)
 VDRAW_VEC(3)
+#define VVEC2(v) (vvec2){v[0], v[1]}
+#define VVEC3(v) (vvec3){v[0], v[1], v[2]}
 
 typedef vvec2 VPoint;
 typedef vvec2 vmat2[2]; 
@@ -148,14 +163,6 @@ size_t _VDRAW_POLYGONS_SIZE = 0;
 
 struct VAnnotationInterface _VDRAW_ANNOTATIONS[VDRAW_MAX_ANNOTATIONS];
 size_t _VDRAW_ANNOTATIONS_SIZE = 0;
-
-#ifdef _SUPPORT_UTF8_
-#define V_THETA "\xCE\xB8"
-#define V_PHI "\xCF\x95"
-#define V_SUB_ONE "\xE2\x82\x81"
-#define V_SUP_ONE "\xC2\xB9"
-#define V_INTEGRAL "\xE2\x88\xAB"
-#endif
 
 void vdraw_set_style(VDrawContext ctx, VDrawStyleInfo *style);
 
@@ -243,7 +250,7 @@ void vvec2_to_image_coordinates(VDrawContext ctx,
 	} 
 } 
 
-void vvec2_annotate_to(VDrawContext ctx, vvec2 vertex, 
+void vvec2_annotate_to(VDrawContext ctx, const vvec2 vertex, 
 	VAnnotation annotation, const double complex direction)
 {
 	double i = cimag(direction);
@@ -295,7 +302,7 @@ inline double vedge_len(const VEdge edge)
 }
 
 #define vedge_from_vertices vline_from_point
-inline void vline_from_point(vvec2 u, vvec2 v, VLine out)
+inline void vline_from_point(const vvec2 u, const vvec2 v, VLine out)
 {
 	memcpy(out[0], u, sizeof(vvec2));
 	memcpy(out[1], v, sizeof(vvec2));
@@ -303,14 +310,20 @@ inline void vline_from_point(vvec2 u, vvec2 v, VLine out)
 
 inline VFunction vline_point(VDrawContext ctx, const VLine line, const double ratio_from_end)
 {	
-	// subtract origin from center to get distance from 
+	// subtract origin from center to get distance from origin to the center of the segment
 	const vvec2 origin = {ctx->width/2.0, ctx->height/2.0};
 	const vvec2 center = {(line[0][0] + line[1][0]) / 2.0, (line[0][1] + line[1][1]) / 2.0};
 	const vvec2 offset = {center[0] - origin[0], center[1] - origin[1]};
 
 	const double slope = (line[0][1]-line[1][1])/(line[0][0]-line[1][0]);
-	//const double yint = 
-	
+	double xdist = (line[0][0] - line[1][0]) * ratio_from_end;
+	vvec2 rpoint;
+	if (line[1][1] > line[0][1]) {
+		vvec2_copy((vvec2){line[0][0]+xdist, line[0][0]+(slope*xdist)}, rpoint);
+	} else {
+		vvec2_copy((vvec2){line[0][0]+xdist, line[0][0]-(slope*xdist)}, rpoint);
+	}
+	vdraw_dot(ctx , VVEC2(rpoint), NULL);
 }
 
 VPolygon vpolygon_create(vvec2 *vertices, const size_t vertex_count, 
@@ -399,7 +412,7 @@ void vdraw_set_style(VDrawContext ctx, VDrawStyleInfo *style)
 
 }
 
-void vdraw_dot(VDrawContext ctx, vvec2 point, VDrawStyleInfo *style)
+void vdraw_dot(VDrawContext ctx, const vvec2 point, VDrawStyleInfo *style)
 {
 	vdraw_set_style(ctx, style);
 	cairo_arc(ctx->cr, point[0], point[1], style->lw*1.6, 0.0, 2.0*M_PI);
@@ -417,6 +430,7 @@ void vdraw_line(VDrawContext ctx, VLine line, VDrawStyleInfo *style)
 	cairo_stroke(ctx->cr);
 
 	vdraw_dot(ctx, line[0], style);
+	vdraw_dot(ctx, line[0], style);
 	vdraw_dot(ctx, line[1], style);
 	return;
 
@@ -432,7 +446,8 @@ void vdraw_perpendicular_bisector(VDrawContext ctx, VLine line,
 	const vvec2 bisector = {(line[0][0] + line[1][0]) / 2.0, (line[0][1] + line[1][1]) / 2.0};
 	vvec2 u = {(line[0][0]-line[1][0])*-1, line[0][1]-line[1][1]};
 	vvec2_normalize(u);
-	VLine pb = {bisector, {(v[0]+bisector[0])+distance-1, (v[1]+bisector[1])-distance+1}};
+	VLine pb;
+	vline_from_point(bisector, (vvec2){(u[0]+bisector[0])+distance-1, (u[1]+bisector[1])-distance+1}, pb);
 	vdraw_line(ctx, pb, style);
 }
 
@@ -490,15 +505,15 @@ void vdraw_polygon_angle(VDrawContext ctx, VPolygon polygon, const int vertex)
 	// inverse R and B for angles only
 	cairo_set_source_rgba(ctx->cr, c.b, c.g, c.r, c.a);
 
-
-	vvec2 R = poly->vertices[vertex];
+	vvec2 R;
+	vvec2_copy(poly->vertices[vertex], R);
 	// signed integers are very nice nice nice
 	vvec2 P;
-	if (vertex-1 < 0) P = poly->vertices[poly->vertex_count-1];
-	else P = poly->vertices[vertex-1];
+	if (vertex-1 < 0) vvec2_copy(poly->vertices[poly->vertex_count-1], P);
+	else vvec2_copy(poly->vertices[vertex-1], P);
 	vvec2 Q;
-	if (vertex+1 == poly->vertex_count) Q = poly->vertices[0];
-	else Q = poly->vertices[vertex+1];
+	if (vertex+1 == poly->vertex_count) vvec2_copy(poly->vertices[0], Q);
+	else vvec2_copy(poly->vertices[vertex+1], Q);
 	//vvec2 P = poly->vertices[(vertex - 1) & (int)(poly->vertex_count)-1];
 	//vvec2 Q = poly->vertices[(vertex + 1) % (int)(poly->vertex_count)];
 	vvec2 u = {P[0]-R[0], P[1]-R[1]};
@@ -606,12 +621,21 @@ void vdraw_polygon_angle(VDrawContext ctx, VPolygon polygon, const int vertex)
 		vvec2 u_n = {u[0]/vvec2_len(u), u[1]/vvec2_len(u)};
 		vvec2 v_n = {v[0]/vvec2_len(v), v[1]/vvec2_len(v)};
 		const double imgr = (ctx->width + ctx->height)*0.025;
-		size_t angle_vcount = 5;
-		vvec2 angle_vertices[] = {
-			R, {R[0]+(u_n[0]*imgr), R[1]+(u_n[1]*imgr)}, 
+		const size_t angle_vcount = 5;
+		vvec2 angle_vertices[5] = {
+			{R[0], R[1]}, 
+			{R[0]+(u_n[0]*imgr), R[1]+(u_n[1]*imgr)}, 
 			{R[0]+((u_n[0]+v_n[0])*imgr), R[1]+((u_n[1]+v_n[1])*imgr)}, 
-			{R[0]+(v_n[0]*imgr), R[1]+(v_n[1]*imgr)}, R
+			{R[0]+(v_n[0]*imgr), R[1]+(v_n[1]*imgr)}, 
+			{R[0], R[1]}
 		};
+
+		#ifdef _V_DEBUG_
+		for (size_t i = 0; i < angle_vcount; i++) 
+			printf("right_angles vertex: [%f, %f]\n", 
+				angle_vertices[i][0], angle_vertices[i][1]);
+		#endif
+
 		VDrawStyleInfo style = {
 			.lw = 0.05,
 			.color = (RGBA_t){c.b, c.b, c.r, c.a},
@@ -633,7 +657,7 @@ void vdraw_polygon_angle(VDrawContext ctx, VPolygon polygon, const int vertex)
 int main(int argc, char* argv[])
 {
 	VDrawCreateInfo info = {
-		.filename = "test[0]df",
+		.filename = "test.pdf",
 		.width = 10.0,
 		.height = 10.0
 	};
@@ -702,6 +726,7 @@ int main(int argc, char* argv[])
 	vdraw_line(ctx, line2, &style);
 	vdraw_perpendicular_bisector(ctx, line, 2.5, &style);
 	vdraw_dot(ctx, (vvec2){0.0, 0.0}, &style);
+	vline_point(ctx, line2, 0.25);
 	vdraw_save(ctx);
 	vdraw_destroy(ctx);
 	
