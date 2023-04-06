@@ -16,3 +16,5 @@ template.fdb_latexmk
 template.fls
 template.pdf
 template.toc
+fiber-rs/assets
+fiber-rs/target
