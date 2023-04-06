@@ -1,0 +1,1 @@
+clang test1.cc shader.cc texture.cc -lGLESv2 -lSDL2 -lSDL2_image -I/usr/include/SDL2/ 
