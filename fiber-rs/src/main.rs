@@ -45,12 +45,14 @@ struct CanvasInfo {
 	height: f32,
 	i: f32,
 	j: f32,
+	// translation is the translation on the camera (not the linear map!)
 	translation: Vec3,
 	dtranslation: Vec2,
 	global_scale: f32,
 	drag: bool,
 	prev: Vec2,
-	switch: bool,
+	switch: i32,
+	grid_scale: f32,
 }
 
 struct Gridlines;
@@ -87,7 +89,7 @@ impl Plugin for Gridlines {
 		app.insert_resource(CanvasInfo {
 			width: 1280.0, height: 720.0, translation: Vec3::ZERO, dtranslation: Vec2::ZERO,
 			i: 1280.0 / 16.0, j: 720.0 / 9.0, prev: Vec2::ZERO,
-			drag: false, switch: false, global_scale: 1.0
+			drag: false, switch: 5, global_scale: 1.0, grid_scale: 1.0
 		})
 		.add_startup_system(grid_startup)
 		.add_system(resize_system)
@@ -97,31 +99,36 @@ impl Plugin for Gridlines {
 }
 
 fn draw_grid(_commands: &mut Commands, canvas_info: &CanvasInfo) {
-	let x_incr = canvas_info.i; // * canvas_info.global_scale;
-	let y_incr = canvas_info.j; // * canvas_info.global_scale;
+	let x_incr = canvas_info.i; 
+	let y_incr = canvas_info.j;
+	println!("x_incr: {}, y_incr: {}", x_incr, y_incr);
 	// we add an additional 32 increments so we can "extend" the grid without redrawing so often
-	let x = canvas_info.width + (x_incr*32.0*canvas_info.global_scale);
-	let y = canvas_info.height + (y_incr*32.0*canvas_info.global_scale);
-	let l = canvas_info.translation.x.abs() + (x / 2.0);
-	let h = canvas_info.translation.y.abs() + (y / 2.0);
+	let x = canvas_info.width + (canvas_info.i * 16.0 * canvas_info.global_scale);
+	let y = canvas_info.height + (canvas_info.j * 16.0 * canvas_info.global_scale);
+	let l = (x / 2.0) * canvas_info.global_scale;
+	let h = (y / 2.0) * canvas_info.global_scale;
+	let xf = (canvas_info.translation.x  / (canvas_info.i * canvas_info.global_scale)).floor() * canvas_info.i;
+	let yf = (canvas_info.translation.y  / (canvas_info.j * canvas_info.global_scale)).floor() * canvas_info.j;
 
-	println!("i = {x_incr}, j = {y_incr}");
 	let mut builder = GeometryBuilder::new();
 	let mut i: f32 = 0.0;
 	while (i*x_incr) < l || (i*y_incr) < h {
-		builder = builder.add(&Line(
-			Vec2::new(i*x_incr, -h),
-			Vec2::new(i*x_incr, h)
-		)).add(&Line(
-			Vec2::new((i*x_incr)*-1.0, -h),
-			Vec2::new((i*x_incr)*-1.0, h)
-		));	
-		builder = builder.add(&Line(
-			Vec2::new(-l, i*y_incr),
-			Vec2::new(l, i*y_incr)
-		)).add(&Line(
-			Vec2::new(-l, (i*y_incr)*-1.0),
-			Vec2::new(l, (i*y_incr)*-1.0)
+		builder = builder
+		.add(&Line(
+			Vec2::new(xf + (i*x_incr), yf-h),
+			Vec2::new(xf + (i*x_incr), yf+h)
+		))
+		.add(&Line(
+			Vec2::new(xf - (i*x_incr), yf-h),
+			Vec2::new(xf - (i*x_incr), yf+h)
+		))
+		.add(&Line(
+			Vec2::new(xf-l, yf + (i*y_incr)),
+			Vec2::new(xf+l, yf + (i*y_incr))
+		))
+		.add(&Line(
+			Vec2::new(xf-l, yf - (i*y_incr)),
+			Vec2::new(xf+l, yf - (i*y_incr))
 		));
 		i += 1.0;
 	}
@@ -138,11 +145,11 @@ fn draw_grid(_commands: &mut Commands, canvas_info: &CanvasInfo) {
 	// TODO, change the axes length and height after every couple translations
 	let axes_builder = GeometryBuilder::new()
 	.add(&Line(
-		Vec2::new(0.0, -y - canvas_info.translation.y),
-		Vec2::new(0.0, y + canvas_info.translation.y)
+		Vec2::new(0.0, -y - canvas_info.translation.y.abs()),
+		Vec2::new(0.0, y + canvas_info.translation.y.abs())
 	)).add(&Line(
-		Vec2::new(-x - canvas_info.translation.x, 0.0),
-		Vec2::new(x + canvas_info.translation.x, 0.0)
+		Vec2::new(-x - canvas_info.translation.x.abs(), 0.0),
+		Vec2::new(x + canvas_info.translation.x.abs(), 0.0)
 	));
 
 	_commands.spawn((
@@ -225,7 +232,7 @@ fn resize_system(mut _commands: Commands,
 
 		canvas_res.height = y;
 		canvas_res.width = x;
-		//draw_grid(&mut _commands, &canvas_res);
+		draw_grid(&mut _commands, &canvas_res);
 	}
 }
 
@@ -234,7 +241,7 @@ fn mouse_system(
 	mut mouse_button_input_events: EventReader<MouseButtonInput>,
     mut cursor_moved_events: EventReader<CursorMoved>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
-	mut transforms: Query<&mut Transform, (With<CanvasComponent>, Without<Camera>)>,
+	//mut transforms: Query<&mut Transform, (With<CanvasComponent>, Without<Camera>)>,
 	mut cam_transforms: Query<&mut Transform, With<Camera>>,
 	old_elements: Query<Entity, With<CanvasComponent>>,
 	mut canvas_info: ResMut<CanvasInfo>
@@ -269,9 +276,8 @@ fn mouse_system(
 				canvas_info.translation.x = transform.translation.x;
 				canvas_info.translation.y = transform.translation.y;		
 			}
-			if canvas_info.dtranslation.x.abs() > (canvas_info.i * 16.0) / canvas_info.global_scale || 
-				canvas_info.dtranslation.y.abs() >(canvas_info.j * 16.0) / canvas_info.global_scale {
-				for element in old_elements.iter() {_commands.entity(element).despawn()} 
+			if canvas_info.dtranslation.x.abs() > canvas_info.i * canvas_info.global_scale || 
+				canvas_info.dtranslation.y.abs() > canvas_info.j * canvas_info.global_scale {
 				draw_grid(&mut _commands, &canvas_info);
 				draw_function(
 					&mut _commands, 
@@ -287,6 +293,7 @@ fn mouse_system(
 					(-10.0, 10.0),
 					600.0
 				);
+				println!("REDRAWING THE GRID");
 				canvas_info.dtranslation = Vec2::ZERO;
 			} 
 		}
@@ -294,8 +301,9 @@ fn mouse_system(
 	}
 
     for event in mouse_wheel_events.iter() {
-		if event.y > 0.0 {canvas_info.global_scale *= 0.8;} 
-		else if event.y < 0.0 {canvas_info.global_scale *= 1.2;}
+		if event.y > 0.0 {canvas_info.global_scale *= 0.8; canvas_info.switch -= 1;} 
+		else {canvas_info.global_scale *= 1.2; canvas_info.switch += 1}
+		
 		for mut transform in cam_transforms.iter_mut() {
 			for element in old_elements.iter() {_commands.entity(element).despawn()} 
 			transform.scale.x = canvas_info.global_scale;
@@ -316,6 +324,7 @@ fn mouse_system(
 				600.0
 			);
 		}
+		println!("SWITCH: {}", canvas_info.switch);
 		// TODO: Every 5 steps of the mouse wheel, redraw the grid with larger gridlines
     }
 		//println!("TRANSLATION X: {}, GLOBAL_SCALE {}", canvas_info.translation.x, canvas_info.global_scale);
@@ -324,8 +333,10 @@ fn mouse_system(
 }
 
 fn keybind_system(
-	_commands: Commands, 
+	mut _commands: Commands, 
 	mut transforms: Query<&mut Transform, With<CanvasComponent>>,
+	canvas_info: Res<CanvasInfo>,
+	old_elements: Query<Entity, With<CanvasComponent>>,
 	key: Res<Input<KeyCode>>,
 	time: Res<Time>
 ) {
@@ -350,6 +361,22 @@ fn keybind_system(
     }
 
     if key.just_released(KeyCode::A) {
+		for entity in old_elements.iter() {
+			_commands.entity(entity).despawn();
+		}
+		draw_grid(&mut _commands, &canvas_info);
         info!("'A' just released");
     }
+	if key.pressed(KeyCode::S) {
+		dx -= 0.05;	
+		dy -= 0.02;	
+		let m = Mat4::from_diagonal(Vec4::new(
+			dx, dy, 1.0, 1.0
+		));
+		for mut transform in transforms.iter_mut() {
+			let a = transform.compute_matrix();
+			println!("a: {}", a);
+			*transform = Transform::from_matrix(a.mul_mat4(&m));
+		}
+	}
 }
