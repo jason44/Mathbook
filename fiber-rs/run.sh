@@ -1,1 +1,1 @@
-cargo run --features bevy/wayland bevy/dynamic --profile debug
+cargo run --features bevy/wayland bevy/dynamic --debug
