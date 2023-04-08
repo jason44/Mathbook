@@ -43,6 +43,7 @@ struct CanvasComponent;
 struct CanvasInfo {
 	width: f32,
 	height: f32,
+	scale: f32,
 	i: f32,
 	j: f32,
 	// translation is the translation on the camera (not the linear map!)
@@ -66,9 +67,9 @@ impl PaintStyle {
 	pub const COLOR: Color = Color::rgba(0.25, 0.55, 0.85, 0.55);
 	pub const COLOR_ALT: Color = Color::rgba(0.85, 0.25, 0.30, 1.0);
 	pub const COLOR_MAJOR: Color = Color::rgba(0.25, 0.55, 0.85, 1.0);
-	pub const COLOR_MINOR: Color =  Color::rgba(0.25, 0.55, 0.85, 0.5);
+	pub const COLOR_MINOR: Color =  Color::rgba(0.25, 0.55, 0.85, 0.35);
 	pub const THICKNESS: f32 =  0.9;
-	pub const THICKNESS_MAJOR: f32 =  2.3;
+	pub const THICKNESS_MAJOR: f32 =  2.7;
 	pub const THICKNESS_MINOR: f32 =  0.65;
 }
 
@@ -87,7 +88,7 @@ impl PaintStyle {
 impl Plugin for Gridlines {
 	fn build(&self, app: &mut App) {
 		app.insert_resource(CanvasInfo {
-			width: 1280.0, height: 720.0, translation: Vec3::ZERO, dtranslation: Vec2::ZERO,
+			width: 1280.0, height: 720.0, scale: 1.0, translation: Vec3::ZERO, dtranslation: Vec2::ZERO,
 			i: 1280.0 / 16.0, j: 720.0 / 9.0, prev: Vec2::ZERO,
 			drag: false, switch: 5, global_scale: 1.0, grid_scale: 1.0
 		})
@@ -105,10 +106,10 @@ fn draw_grid(_commands: &mut Commands, canvas_info: &CanvasInfo) {
 	// we add an additional 32 increments so we can "extend" the grid without redrawing so often
 	let x = canvas_info.width + (canvas_info.i * 16.0 * canvas_info.global_scale);
 	let y = canvas_info.height + (canvas_info.j * 16.0 * canvas_info.global_scale);
-	let l = (x / 2.0) * canvas_info.global_scale;
-	let h = (y / 2.0) * canvas_info.global_scale;
-	let xf = (canvas_info.translation.x  / (canvas_info.i * canvas_info.global_scale)).floor() * canvas_info.i;
-	let yf = (canvas_info.translation.y  / (canvas_info.j * canvas_info.global_scale)).floor() * canvas_info.j;
+	let l = x + (x / 2.0) * canvas_info.global_scale;
+	let h = y + (y / 2.0) * canvas_info.global_scale;
+	let xf = (canvas_info.translation.x / canvas_info.i).floor() * canvas_info.i;
+	let yf = (canvas_info.translation.y / canvas_info.j).floor() * canvas_info.j;
 
 	let mut builder = GeometryBuilder::new();
 	let mut i: f32 = 0.0;
@@ -129,19 +130,23 @@ fn draw_grid(_commands: &mut Commands, canvas_info: &CanvasInfo) {
 		.add(&Line(
 			Vec2::new(xf-l, yf - (i*y_incr)),
 			Vec2::new(xf+l, yf - (i*y_incr))
-		));
-		i += 1.0;
+		)); 
+		i += 1.0; 
 	}
 
 	_commands.spawn((
 		ShapeBundle {
 			path: builder.build(),
+			transform: Transform::from_scale(Vec3::new(
+				canvas_info.scale, canvas_info.scale, 0.0
+			)),
 			..default()
 		},
-		Fill::color(PaintStyle::COLOR),
-		Stroke::new(PaintStyle::COLOR, PaintStyle::THICKNESS),
+		//Fill::color(PaintStyle::COLOR),
+		Stroke::new(PaintStyle::COLOR_MINOR, PaintStyle::THICKNESS),
 		CanvasComponent,
 	));
+
 	// TODO, change the axes length and height after every couple translations
 	let axes_builder = GeometryBuilder::new()
 	.add(&Line(
@@ -155,19 +160,15 @@ fn draw_grid(_commands: &mut Commands, canvas_info: &CanvasInfo) {
 	_commands.spawn((
 		ShapeBundle {
 			path: axes_builder.build(),
-			transform: Transform::from_scale(Vec3::new(
-				canvas_info.global_scale, 
-				canvas_info.global_scale, 0.0
-			)),
 			..default()
 		},
-		Fill::color(PaintStyle::COLOR_MAJOR),
+		//Fill::color(PaintStyle::COLOR_MAJOR),
 		Stroke::new(PaintStyle::COLOR_MAJOR, PaintStyle::THICKNESS_MAJOR),
 		CanvasComponent,
 	));
 }
 
-/// @param x_range:
+/// @param x_range
 /// the range in which the function is drawn (in functional coordinates, not screen coordinates) 
 /// @param resolution:
 /// the number of points to be sampled
@@ -214,7 +215,7 @@ fn grid_startup(mut _commands: Commands, canvas_info: Res<CanvasInfo>) {
 }
 
 fn resize_system(mut _commands: Commands,
-	mut canvas_res: ResMut<CanvasInfo>,
+	mut canvas_info: ResMut<CanvasInfo>,
 	mut transform: Query<&mut Transform, With<CanvasComponent>>,
 	mut resize_reader: EventReader<WindowResized>
 ) {
@@ -222,17 +223,17 @@ fn resize_system(mut _commands: Commands,
 		let y = event.height;
 		let x = event.width;
 
-		let scalex = x / canvas_res.width;
-		let scaley = y / canvas_res.height;
+		let scalex = x / canvas_info.width;
+		let scaley = y / canvas_info.height;
 		let scale = (scalex + scaley) / 2.0;
 		for mut transform in transform.iter_mut() {
 			transform.scale.x *= scale;
 			transform.scale.y *= scale;
 		}
-
-		canvas_res.height = y;
-		canvas_res.width = x;
-		draw_grid(&mut _commands, &canvas_res);
+		canvas_info.scale *= scale;
+		canvas_info.height = y;
+		canvas_info.width = x;
+		//draw_grid(&mut _commands, &canvas_info);
 	}
 }
 
@@ -273,11 +274,11 @@ fn mouse_system(
 				transform.translation.y += dy;
 				canvas_info.dtranslation.x += dx;
 				canvas_info.dtranslation.y += dy;
-				canvas_info.translation.x = transform.translation.x;
-				canvas_info.translation.y = transform.translation.y;		
+				canvas_info.translation.x += dx;
+				canvas_info.translation.y += dy		
 			}
-			if canvas_info.dtranslation.x.abs() > canvas_info.i * canvas_info.global_scale || 
-				canvas_info.dtranslation.y.abs() > canvas_info.j * canvas_info.global_scale {
+			if canvas_info.dtranslation.x.abs() > canvas_info.i * 8.0 * canvas_info.global_scale || 
+				canvas_info.dtranslation.y.abs() > canvas_info.j * 8.0 *  canvas_info.global_scale {
 				draw_grid(&mut _commands, &canvas_info);
 				draw_function(
 					&mut _commands, 
@@ -293,7 +294,7 @@ fn mouse_system(
 					(-10.0, 10.0),
 					600.0
 				);
-				println!("REDRAWING THE GRID");
+				println!("xtranslation: {}, ytranslation: {}", canvas_info.translation.x, canvas_info.translation.y);
 				canvas_info.dtranslation = Vec2::ZERO;
 			} 
 		}
@@ -303,11 +304,13 @@ fn mouse_system(
     for event in mouse_wheel_events.iter() {
 		if event.y > 0.0 {canvas_info.global_scale *= 0.8; canvas_info.switch -= 1;} 
 		else {canvas_info.global_scale *= 1.2; canvas_info.switch += 1}
-		
+
+
 		for mut transform in cam_transforms.iter_mut() {
 			for element in old_elements.iter() {_commands.entity(element).despawn()} 
 			transform.scale.x = canvas_info.global_scale;
 			transform.scale.y = canvas_info.global_scale;
+			//canvas_info.scale *= canvas_info.global_scale;
 			draw_grid(&mut _commands, &canvas_info);
 			draw_function(
 				&mut _commands, 
@@ -324,6 +327,8 @@ fn mouse_system(
 				600.0
 			);
 		}
+		// redrawing resets transformations
+		//canvas_info.translation = Vec3::ZERO;	
 		println!("SWITCH: {}", canvas_info.switch);
 		// TODO: Every 5 steps of the mouse wheel, redraw the grid with larger gridlines
     }
