@@ -47,7 +47,7 @@ impl PaintStyle {
 	pub const COLOR: Color = Color::rgba(0.25, 0.55, 0.85, 0.55);
 	pub const COLOR_ALT: Color = Color::rgba(0.85, 0.25, 0.30, 1.0);
 	pub const COLOR_MAJOR: Color = Color::rgba(0.25, 0.55, 0.85, 1.0);
-	pub const COLOR_MINOR: Color =  Color::rgba(0.15, 0.45, 0.75, 1.0);
+	pub const COLOR_MINOR: Color =  Color::rgba(0.1875, 0.412, 0.6375, 1.0);
 	pub const THICKNESS: f32 =  0.85;
 	pub const THICKNESS_MAJOR: f32 =  2.9;
 	pub const THICKNESS_MINOR: f32 =  0.75;
@@ -83,13 +83,33 @@ struct CanvasInfo {
 	// an integer that decides when the spacing between gridlines should change
 	grid_zoom_level: i32,
 	// functions to be drawn
-	funcs: Vec<SingleVarFunc>
+	funcs: Vec<SingleVarFunc>,
+	// transforms to be played either as a composition or individually
+	transforms: Vec<Mat4>,
+	transform_pos: u32
 }
 
 impl CanvasInfo {
 	fn push_func(&mut self, func: SingleVarFunc) -> &mut CanvasInfo {
 		self.funcs.push(func);	
 		self
+	}
+
+	fn push_transform(&mut self, transform: Mat4) -> &mut CanvasInfo {
+		self.transforms.push(transform);	
+		self
+	}
+}
+
+impl Default for CanvasInfo {
+	fn default() -> Self {
+		CanvasInfo {
+			width: 1280.0, height: 720.0, scale: 1.0, 
+			translation: Vec3::ZERO, dtranslation: Vec2::ZERO,
+			i: 80.0, j: 80.0, prev: Vec2::ZERO, drag: false, 
+			cam_scale: 1.0, cam_local_scale: 1.0, grid_zoom_level: 0, 
+			funcs: Vec::new(), transforms: Vec::new(), transform_pos: 0
+		}
 	}
 }
 
@@ -100,11 +120,7 @@ struct Canvas;
 
 impl Plugin for Canvas {
 	fn build(&self, app: &mut App) {
-		app.insert_resource(CanvasInfo {
-			width: 1280.0, height: 720.0, scale: 1.0, translation: Vec3::ZERO, dtranslation: Vec2::ZERO,
-			i: 80.0, j: 80.0, prev: Vec2::ZERO,
-			drag: false, cam_scale: 1.0, cam_local_scale: 1.0, grid_zoom_level: 0, funcs: Vec::new()
-		})
+		app.insert_resource(CanvasInfo::default())
 		.add_startup_system(grid_startup)
 		.add_system(resize_system)
 		.add_system(mouse_system)
@@ -197,20 +213,25 @@ fn draw_function<F>(
 	let nx = resolution as usize;
 	let dx = (x_range.1 - x_range.0) / resolution;
 	let l = x_range.0;
-
+	
 	let mut t: f32 = 0.0;
 	let mut n = 0;
+	let mut points: Vec<Vec2> = Vec::with_capacity(nx);
 	while l + (t * dx) < x_range.1 {
 		// possible optimizations:
 		// end the loop earlier instead of incrementing n to nx (especially helpful for a function that is only defined for non-negative numbers)
-		// bug: for functions defined only on non-negative numbers, there is no line to 0 or line that 'intersects' 0
-		let mut points: Vec<Vec2> = Vec::with_capacity(nx-n);
+		// bug: functions with slopes that increase too quickly are not adequately graphed. 
+
+		// possible solution?: scale dx based on the derivative of the current point 
+		// if that doesn't work well enough, we can just draw a vertical line if the derivative is large enough. 
+		// (maybe a combination of both)
+		// this will fix bugs with functions like tanx and sqrtx
 		for _i in n..nx {
 			let x = (l + (t * dx)) * canvas_info.i;
 			let y = f(l + (t * dx)) * canvas_info.j;
 			t += 1.0;
 			if y.is_finite() == false {break}
-			points.push(Vec2::new(x, y));
+			points.push(Vec2::new(x, y))
 		}
 		n += 1;
 
@@ -235,34 +256,42 @@ fn draw_function<F>(
 			//Fill::color(PaintStyle::COLOR_MINOR),
 			CanvasComponent
 		));
+		points.clear();
 	}
 }
 
 fn draw(_commands: &mut Commands, canvas_info: &CanvasInfo) {
+
 	draw_grid(_commands, canvas_info);
 	let x_range = (
 		// width is multiplied by 3 so that the function is drawn for 1 whole width to the left and right of the viewport
 		// which is consistent with what we do when calculating gridlines
 		// TODO: gridlines and functions use the same x_range, so instead of calculating it twice, calculate it once here
-		(canvas_info.translation.x - (canvas_info.width * canvas_info.cam_scale * 3.0)) / canvas_info.i,
-		(canvas_info.translation.x + (canvas_info.width * canvas_info.cam_scale * 3.0)) / canvas_info.i
+		((canvas_info.translation.x - (canvas_info.width * canvas_info.cam_scale * 3.0)) / canvas_info.i),
+		((canvas_info.translation.x + (canvas_info.width * canvas_info.cam_scale * 3.0)) / canvas_info.i)
 	);
+	// we might not need res_scale if we divide dx by the derivative
+	let res_scale = |x: f32| {(2.0/x)+0.7};
 	println!("width: {}", canvas_info.width);
 	println!("x_range ({},{})", x_range.0, x_range.1);
-	println!("resolution {}", 70.0 * (x_range.1 - x_range.0));
+	println!("resolution {}", 50.0 * res_scale(canvas_info.cam_scale) * (x_range.1-x_range.0));
+	//println!("resolution {}", (canvas_info.height + canvas_info.width) * canvas_info.cam_scale * res_scale(canvas_info.cam_scale));
 	for func in &canvas_info.funcs {
-		draw_function(_commands, canvas_info, func, x_range, 70.0 * (x_range.1-x_range.0));
+		draw_function(_commands, canvas_info, func, x_range, 
+			50.0 * res_scale(canvas_info.cam_scale) * (x_range.1-x_range.0));
+			//(canvas_info.height + canvas_info.width) * canvas_info.cam_scale * res_scale(canvas_info.cam_scale));
 	}
 }
 
 fn grid_startup(mut _commands: Commands, mut canvas_info: ResMut<CanvasInfo>) {
 	canvas_info
 	//.push_func(|x|{x.exp()})
-	//.push_func(|x|{x.powf(2.0)})
-	//.push_func(|x|{x.powf(3.0)})
-	.push_func(|x|{x*0.5})
+	//.push_func(|x|{x*0.5})
 	.push_func(|x|{x.sqrt()})
-	.push_func(|x|{x.ln()})
+	//.push_func(|x|{x.ln()})
+	//.push_func(|x|{1.0 / x})
+	.push_func(|x|{x})
+	.push_func(|x|{(x+2.0).sqrt()+x.powf(2.0)})
 	.push_func(|x|{x.tan()});
 
 	draw(&mut _commands, &canvas_info);
@@ -317,9 +346,6 @@ fn mouse_system(
 		if canvas_info.drag {
 			for mut transform in cam_transforms.iter_mut() {
 				let dir = canvas_info.prev - cursor.position;
-				// TODO: store the translation somewhere so that we can reapply it after a redraw
-				// eg: for each x_incr change in translation.x add a new vertical gridline
-				// for each y_incr change in translation.y add a new horizontal gridline
 				let dx = dir.x * 0.75 * canvas_info.cam_scale;
 				let dy = dir.y * 0.75 * canvas_info.cam_scale;
 				transform.translation.x += dx;
@@ -357,46 +383,91 @@ fn mouse_system(
 		}
 		println!("SWITCH: {}", canvas_info.grid_zoom_level);
     }
-	// to get l (horizontal distance from origin) out of translation.x: translation.x = l*i*cam_scale. So, to get horizontal distance in functional coordinates
-	// just use the formula translation.x/i*cam_scale afterwards, shift the result by translation.x and change bases to ij.
+	// to get l (horizontal distance from origin) out of translation.x: translation.x = l*i*cam_scale. 
+	// So, to get horizontal distance in functional coordinates just use the formula:
+	// translation.x/i*cam_scale afterwards, shift the result by translation.x and change bases to ij.
 }
 
 fn keybind_system(
 	mut _commands: Commands, 
 	mut transforms: Query<&mut Transform, With<CanvasComponent>>,
-	canvas_info: Res<CanvasInfo>,
+	mut canvas_info: ResMut<CanvasInfo>,
 	old_elements: Query<Entity, With<CanvasComponent>>,
 	key: Res<Input<KeyCode>>,
 	time: Res<Time>
 ) {
 	let mut dx: f32 = 0.0;
 	let mut dy: f32 = 0.0;
-	if key.pressed(KeyCode::Space) {
-		println!("identity matrix {}", transforms.single().compute_matrix());
+	if key.just_pressed(KeyCode::A) {
+		canvas_info.push_transform(Mat4::from_cols(
+			Vec4::new(0.0, 1.0, 0.0, 0.0),
+			Vec4::new(1.0, 0.0, 0.0, 0.0),
+			Vec4::new(0.0, 0.0, 1.0, 0.0),
+			Vec4::new(0.0, 0.0, 0.0, 1.0),
+		));
 	}
 
-	if key.pressed(KeyCode::A) {
-        //info!("'A' currently pressed");
-		dx += 0.05;	
-		dy += 0.02;	
-		let m = Mat4::from_cols(
-			Vec4::new(1.0, 0.0, 0.0, 0.0),
-			Vec4::new(dy, 1.0, 0.0, 0.0),
-			Vec4::new(0.0, 0.0, 1.0, 0.0),
-			Vec4::new(0.0, 0.0, 0.0, 1.0)
-		);
+	let mut base;
+	let target;
+	let delta;
+	let steps;
+	if key.just_pressed(KeyCode::Space) {
+		let mut comp = Mat4::ZERO;
+		canvas_info.transforms.reverse();
+		let mut iter = canvas_info.transforms.iter();
+		comp += iter.next().unwrap_or(
+			&Mat4::from_diagonal(
+				Vec4::new(1.0, 2.0, 1.0, 1.0)
+			)
+		).clone();
+		for transform in iter {
+			comp.mul_mat4(&transform);
+		}
+
+		let mut t = transforms.iter().next().unwrap();
+		base = t.compute_matrix();
+		target = comp.mul_mat4(&base);
+		delta = target - base;
+		steps = 100.0 * ((delta.x_axis.x + delta.x_axis.y + delta.y_axis.x + delta.y_axis.y) / 4.0).floor();
+		delta.mul_scalar(1.0 / steps);
+    }
+/* 
+    if key.pressed(KeyCode::Left) {
 		for mut transform in transforms.iter_mut() {
-			let a = transform.compute_matrix();
-			println!("a: {}", a);
-			*transform = Transform::from_matrix(a.mul_mat4(&m));
+			// TODO: make the base transformation apply to all new drawings
+			// (but for simplicity, reset the transformation when the cameara moves too far)
+			// (otherwise, we must modify xf and yf based on the rotation applied by the matrix)
+			
+			// suggestion: redraw grid every couple increments with 
+			// line thickness scaled by the the average of x, y in the composition's columns 
+			// [x, c], [c, y]
+			println!("bases: {:?}", base);
+			println!("target {:?}", target);
+			println!("delta: {:?}", delta);
+			println!("------------------");
+			while canvas_info.transform_pos > 0 {
+				base -= delta;
+				*transform = Transform::from_matrix(base.clone());
+				
+			}
 		}
     }
 
-    if key.just_pressed(KeyCode::A) {
-        info!("'A' just pressed");
+    if key.pressed(KeyCode::Right) {
+		for mut transform in transforms.iter_mut() {
+			println!("bases: {:?}", base);
+			println!("target {:?}", target);
+			println!("delta: {:?}", delta);
+			println!("------------------");
+			while canvas_info.transform_pos < steps as u32 {
+				base += delta;
+				*transform = Transform::from_matrix(base.clone());
+				
+			}
+		}
     }
 
-    if key.just_released(KeyCode::A) {
+    if key.just_released(KeyCode::S) {
 		for entity in old_elements.iter() {
 			_commands.entity(entity).despawn();
 		}
@@ -415,4 +486,5 @@ fn keybind_system(
 			*transform = Transform::from_matrix(a.mul_mat4(&m));
 		}
 	}
+	*/
 }
