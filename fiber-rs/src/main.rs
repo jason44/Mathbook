@@ -1,4 +1,4 @@
-use std::borrow::BorrowMut;
+use std::{borrow::BorrowMut, f32::consts::PI};
 
 use bevy::{
 	prelude::*, 
@@ -54,7 +54,6 @@ impl PaintStyle {
 }
 
 type SingleVarFunc = fn(f32) -> f32;
-
 
 #[derive(Resource)]
 struct CanvasInfo {
@@ -113,6 +112,35 @@ impl Default for CanvasInfo {
 	}
 }
 
+#[derive(Resource)]
+struct TransformInfo {
+	base: Mat4,
+	target: Mat4,
+	delta: Mat4,
+	steps: f32,
+}
+
+impl TransformInfo {
+	fn sub_delta(&mut self) {
+		self.base -= self.delta;
+	}
+
+	fn add_delta(&mut self) {
+		self.base += self.delta;
+	}
+}
+
+impl Default for TransformInfo {
+	fn default() -> TransformInfo {
+		TransformInfo {
+			base: Mat4::ZERO,
+			target: Mat4::ZERO,
+			delta: Mat4::ZERO,
+			steps: 0.0,
+		}
+	}
+}
+
 #[derive(Component)]
 struct CanvasComponent;
 
@@ -121,6 +149,7 @@ struct Canvas;
 impl Plugin for Canvas {
 	fn build(&self, app: &mut App) {
 		app.insert_resource(CanvasInfo::default())
+		.insert_resource(TransformInfo::default())
 		.add_startup_system(grid_startup)
 		.add_system(resize_system)
 		.add_system(mouse_system)
@@ -222,7 +251,7 @@ fn draw_function<F>(
 		// end the loop earlier instead of incrementing n to nx (especially helpful for a function that is only defined for non-negative numbers)
 		// bug: functions with slopes that increase too quickly are not adequately graphed. 
 
-		// possible solution?: scale dx based on the derivative of the current point 
+		// possible solution?: scale dx based on the derivative of the current point  
 		// if that doesn't work well enough, we can just draw a vertical line if the derivative is large enough. 
 		// (maybe a combination of both)
 		// this will fix bugs with functions like tanx and sqrtx
@@ -271,14 +300,14 @@ fn draw(_commands: &mut Commands, canvas_info: &CanvasInfo) {
 		((canvas_info.translation.x + (canvas_info.width * canvas_info.cam_scale * 3.0)) / canvas_info.i)
 	);
 	// we might not need res_scale if we divide dx by the derivative
-	let res_scale = |x: f32| {(2.0/x)+0.7};
+	let res_scale = |x: f32| {(2.0/x)+0.2};
 	println!("width: {}", canvas_info.width);
 	println!("x_range ({},{})", x_range.0, x_range.1);
-	println!("resolution {}", 50.0 * res_scale(canvas_info.cam_scale) * (x_range.1-x_range.0));
+	println!("resolution {}", 40.0 * res_scale(canvas_info.cam_scale) * (x_range.1-x_range.0));
 	//println!("resolution {}", (canvas_info.height + canvas_info.width) * canvas_info.cam_scale * res_scale(canvas_info.cam_scale));
 	for func in &canvas_info.funcs {
 		draw_function(_commands, canvas_info, func, x_range, 
-			50.0 * res_scale(canvas_info.cam_scale) * (x_range.1-x_range.0));
+			40.0 * res_scale(canvas_info.cam_scale) * (x_range.1-x_range.0));
 			//(canvas_info.height + canvas_info.width) * canvas_info.cam_scale * res_scale(canvas_info.cam_scale));
 	}
 }
@@ -392,48 +421,54 @@ fn keybind_system(
 	mut _commands: Commands, 
 	mut transforms: Query<&mut Transform, With<CanvasComponent>>,
 	mut canvas_info: ResMut<CanvasInfo>,
+	mut transform_info: ResMut<TransformInfo>,
 	old_elements: Query<Entity, With<CanvasComponent>>,
 	key: Res<Input<KeyCode>>,
-	time: Res<Time>
+	//time: Res<Time>
 ) {
 	let mut dx: f32 = 0.0;
 	let mut dy: f32 = 0.0;
+	let mut ti = transform_info;
 	if key.just_pressed(KeyCode::A) {
 		canvas_info.push_transform(Mat4::from_cols(
-			Vec4::new(0.0, 1.0, 0.0, 0.0),
-			Vec4::new(1.0, 0.0, 0.0, 0.0),
+			Vec4::new((PI/2.0).cos(), -(PI/2.0).sin(), 0.0, 0.0),
+			Vec4::new((PI/2.0).sin(), (PI/2.0).cos(), 0.0, 0.0),
 			Vec4::new(0.0, 0.0, 1.0, 0.0),
 			Vec4::new(0.0, 0.0, 0.0, 1.0),
 		));
 	}
 
-	let mut base;
-	let target;
-	let delta;
-	let steps;
 	if key.just_pressed(KeyCode::Space) {
-		let mut comp = Mat4::ZERO;
+		let mut comp: Mat4;
 		canvas_info.transforms.reverse();
 		let mut iter = canvas_info.transforms.iter();
-		comp += iter.next().unwrap_or(
+		comp = iter.next().unwrap_or(
 			&Mat4::from_diagonal(
 				Vec4::new(1.0, 2.0, 1.0, 1.0)
 			)
 		).clone();
-		for transform in iter {
-			comp.mul_mat4(&transform);
+		for mat in iter {
+			comp.mul_mat4(&mat);
 		}
+		println!("target: {}", comp);
 
-		let mut t = transforms.iter().next().unwrap();
-		base = t.compute_matrix();
-		target = comp.mul_mat4(&base);
-		delta = target - base;
-		steps = 100.0 * ((delta.x_axis.x + delta.x_axis.y + delta.y_axis.x + delta.y_axis.y) / 4.0).floor();
-		delta.mul_scalar(1.0 / steps);
+		let t = transforms.iter().next().unwrap();
+		ti.base = t.compute_matrix();
+		println!("ti.base: {}", ti.base);
+		//ti.target = comp.mul_mat4(&ti.base);
+		ti.target = comp;
+		ti.delta = ti.target - ti.base;
+		println!("ti.delta: {}", ti.delta);
+		ti.steps = (50.0 * (
+			(ti.delta.x_axis.x.abs() + ti.delta.x_axis.y.abs() + 
+			ti.delta.y_axis.x.abs() + ti.delta.y_axis.y.abs()) / 4.0
+		)).ceil();
+		ti.delta = ti.delta.mul_scalar(1.0 / ti.steps);
+		println!("ti.delta real: {}", ti.delta);
+		println!("steps: {}", ti.steps);
     }
-/* 
     if key.pressed(KeyCode::Left) {
-		for mut transform in transforms.iter_mut() {
+		if canvas_info.transform_pos > 0 {
 			// TODO: make the base transformation apply to all new drawings
 			// (but for simplicity, reset the transformation when the cameara moves too far)
 			// (otherwise, we must modify xf and yf based on the rotation applied by the matrix)
@@ -441,40 +476,45 @@ fn keybind_system(
 			// suggestion: redraw grid every couple increments with 
 			// line thickness scaled by the the average of x, y in the composition's columns 
 			// [x, c], [c, y]
-			println!("bases: {:?}", base);
-			println!("target {:?}", target);
-			println!("delta: {:?}", delta);
+			println!("bases: {:?}", ti.base);
+			println!("target {:?}", ti.target);
+			println!("delta: {:?}", ti.delta);
 			println!("------------------");
-			while canvas_info.transform_pos > 0 {
-				base -= delta;
-				*transform = Transform::from_matrix(base.clone());
+			canvas_info.transform_pos -= 1;
+			ti.sub_delta();
+			for mut transform in transforms.iter_mut() {
+				//ti.base -= ti.delta;
+				*transform = Transform::from_matrix(ti.base.clone());
 				
 			}
 		}
     }
 
     if key.pressed(KeyCode::Right) {
-		for mut transform in transforms.iter_mut() {
-			println!("bases: {:?}", base);
-			println!("target {:?}", target);
-			println!("delta: {:?}", delta);
+		println!("steps: {}", ti.steps);
+		if canvas_info.transform_pos < ti.steps as u32 {
+			println!("bases: {:?}", ti.base);
+			println!("target {:?}", ti.target);
+			println!("delta: {:?}", ti.delta);
 			println!("------------------");
-			while canvas_info.transform_pos < steps as u32 {
-				base += delta;
-				*transform = Transform::from_matrix(base.clone());
-				
+			canvas_info.transform_pos += 1;
+			ti.add_delta();
+			for mut transform in transforms.iter_mut() {
+				//ti.base += ti.delta;
+				*transform = Transform::from_matrix(ti.base.clone());
 			}
+			// while loop isn't called ever
 		}
     }
 
-    if key.just_released(KeyCode::S) {
+    if key.just_released(KeyCode::P) {
 		for entity in old_elements.iter() {
 			_commands.entity(entity).despawn();
 		}
 		draw_grid(&mut _commands, &canvas_info);
         info!("'A' just released");
     }
-	if key.pressed(KeyCode::S) {
+	if key.pressed(KeyCode::P) {
 		dx -= 0.05;	
 		dy -= 0.02;	
 		let m = Mat4::from_diagonal(Vec4::new(
@@ -486,5 +526,4 @@ fn keybind_system(
 			*transform = Transform::from_matrix(a.mul_mat4(&m));
 		}
 	}
-	*/
 }

@@ -23,20 +23,37 @@ impl UiDark {
 	const PRESSED_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
 }
 
-pub struct UiTree {
-	background: NodeBundle,
-	background_style: Style,
-
-}
-
-pub struct Ui;
-
 fn ui_setup(mut _commands: Commands) {
 	_commands.spawn(Camera2dBundle::default());
 }
 
+pub struct Ui {
+	primary_node: NodeBundle,
+	side_pane: NodeBundle,
+	side_pane_style: Style,
+	header: NodeBundle,
+	header_style: Style,
+	input_box: NodeBundle,
+	input_box_style: Style,							
+}
+#[derive(Component)]
+struct FuncInputBox;
 
-impl Plugin for Ui {
+#[derive(Component)]
+struct MatrixInputBox;
+
+#[derive(Component)]
+struct AnimateButton;
+
+impl Default for Ui {
+	fn default() {
+
+	}
+}
+
+pub struct FiberUi;
+
+impl Plugin for FiberUi {
 	fn build(&self, app: &mut App) {
 		app.add_plugin(FrameRate)
 		.add_startup_system(ui_setup);
