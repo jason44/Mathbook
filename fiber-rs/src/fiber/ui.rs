@@ -2,8 +2,9 @@ use bevy::{
 	prelude::*
 };
 
-use crate::fiber::framerate::FrameRate;
+use bevy_egui::*;
 
+use crate::fiber::framerate::FrameRate;
 
 use bevy::render::color::Color;
 
@@ -23,39 +24,57 @@ impl UiDark {
 	const PRESSED_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
 }
 
-fn ui_setup(mut _commands: Commands) {
-	_commands.spawn(Camera2dBundle::default());
+struct UiImage {
+	image: Handle<Image>,
+	image_inverted: Handle<Image>,
+} 
+
+impl UiImage {
+	fn from_path(asset_server: &mut AssetServer, path: String) -> Self {
+		let (name, ftype) = path.split_once('.').unwrap();
+		let inverted_path = String::with_capacity(name.len() + 10 + ftype.len()) + name + "-inverted." + ftype;
+		Self {
+			image: asset_server.load(path),
+			image_inverted: asset_server.load(inverted_path),
+		}	
+	}
+	//let asset_server = world.get_resource_mut::<AssetServer>().unwrap();
 }
 
-pub struct Ui {
-	primary_node: NodeBundle,
-	side_pane: NodeBundle,
-	side_pane_style: Style,
-	header: NodeBundle,
-	header_style: Style,
-	input_box: NodeBundle,
-	input_box_style: Style,							
+#[derive(Default, Resource)]
+pub struct UiState {
+	// dark mode is default. inverted=true is light mode
+	pub inverted: bool,
+	pub is_visible: bool,	
+	pub egui_texture_handle: Option<egui::TextureHandle>,
 }
-#[derive(Component)]
-struct FuncInputBox;
 
-#[derive(Component)]
-struct MatrixInputBox;
-
-#[derive(Component)]
-struct AnimateButton;
-
-impl Default for Ui {
-	fn default() {
-
+fn egui_style_config(mut contexts: EguiContexts, mut state: ResMut<UiState>) {
+	if !state.inverted {
+		contexts.ctx_mut().set_visuals(egui::Visuals {
+			window_rounding: 5.0.into(),
+			dark_mode: true,
+			window_shadow: egui::epaint::Shadow::small_dark(),
+			..Default::default()
+		});	
+	} else {
+		contexts.ctx_mut().set_visuals(egui::Visuals {
+			window_rounding: 5.0.into(),
+			dark_mode: false,
+			window_shadow: egui::epaint::Shadow::small_light(),
+			..Default::default()
+		});	
 	}
 }
+
+
 
 pub struct FiberUi;
 
 impl Plugin for FiberUi {
 	fn build(&self, app: &mut App) {
 		app.add_plugin(FrameRate)
+		.add_plugin(EguiPlugin)
 		.add_startup_system(ui_setup);
 	}
 }

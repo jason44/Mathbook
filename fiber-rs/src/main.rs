@@ -36,6 +36,7 @@ fn setup(mut _commands: Commands, mut windows: Query<&mut Window>) {
 		min_width: 1280.0,
 		..default()
 	};
+	_commands.spawn(Camera2dBundle::default());
 }
 
 // prevents instantiation
