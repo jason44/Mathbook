@@ -1,13 +1,13 @@
-use std::collections::btree_map::Range;
-use std::ops::RangeInclusive;
-
+use std::{ops::RangeInclusive, str::FromStr};
 use bevy::{
-	prelude::*, transform
+	prelude::*, transform, render::{texture, color::Color}
 };
-
 use bevy_egui::*;
-use bevy::render::color::Color;
-use bevy_egui::egui::FontDefinitions;
+use bevy_egui::egui::{
+	FontDefinitions, TextStyle, FontId, FontFamily,
+	TextEdit,
+};
+use regex::Regex;
 use crate::fiber::framerate::FrameRate;
 use crate::fiber::canvas::*;
 
@@ -27,12 +27,12 @@ impl UiDark {
 	const PRESSED_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
 }
 
-struct UiImage {
-	image: Handle<Image>,
-	image_inverted: Handle<Image>,
+struct Image {
+	image: Handle<texture::Image>,
+	image_inverted: Handle<texture::Image>,
 } 
 
-impl UiImage {
+impl Image {
 	fn from_path(asset_server: &mut AssetServer, path: String) -> Self {
 		let (name, ftype) = path.split_once('.').unwrap();
 		let inverted_path = String::with_capacity(name.len() + 10 + ftype.len()) + name + "-inverted." + ftype;
@@ -44,27 +44,46 @@ impl UiImage {
 	//let asset_server = world.get_resource_mut::<AssetServer>().unwrap();
 }
 
+#[inline]
+fn remove_whitespace(string: &mut String) -> String {
+	let re = Regex::new(r"/s+").unwrap();
+	let res = re.replace_all(string.as_str(), "");
+	String::from_str(&res).unwrap()
+}
+
+struct Function {
+	pub call: Option<fn(f32) -> f32>
+}
+
+impl Function {
+	fn from_string(&mut self, string: String) -> Self {
+
+		Function{call: None}
+	}
+
+	fn parse_string(string: &mut String) -> &String {
+		let s = remove_whitespace(string);
+		for c in  string.char_indices(){
+
+		}
+		
+		string	
+	}
+
+}
+
 #[derive(Resource)]
 pub struct UiState {
 	// dark mode is default. inverted=true is light mode
 	pub inverted: bool,
 	pub is_visible: bool,	
 	pub egui_texture_handle: Option<egui::TextureHandle>,
-	pub text_style_bold: TextStyle,
-	pub text_style: TextStyle,
 	pub func_text: Vec<String>,
 	pub mat_text: Vec<String>,
 }
 
 impl Default for UiState {
-	fn default() -> Self {
-		let mut fonts = FontDefinitions::default();
-		font.font_data.insert(
-			"regular-font".to_owned(), 
-			egui::FontData::from_static(include_bytes!(
-				"../../assets/fonts/Helvetica.ttf"
-			)),
-		)
+	fn default() -> Self {	
 		UiState {
 			inverted: false,
 			is_visible: true,
@@ -93,21 +112,61 @@ fn ui_startup(mut ui_state: ResMut<UiState>) {
 }
 
 fn egui_style_config(mut contexts: EguiContexts, mut state: ResMut<UiState>) {
+	let ctx = contexts.ctx_mut();
 	if !state.inverted {
-		contexts.ctx_mut().set_visuals(egui::Visuals {
-			window_rounding: 5.0.into(),
+		ctx.set_visuals(egui::Visuals {
+			window_rounding: 10.0.into(),
+			menu_rounding: 10.0.into(),
 			dark_mode: true,
 			window_shadow: egui::epaint::Shadow::small_dark(),
+			button_frame: true,
 			..Default::default()
 		});	
 	} else {
-		contexts.ctx_mut().set_visuals(egui::Visuals {
+		ctx.set_visuals(egui::Visuals {
 			window_rounding: 10.0.into(),
+			menu_rounding: 10.0.into(),
 			dark_mode: false,
 			window_shadow: egui::epaint::Shadow::small_light(),
+			button_frame: true,
 			..Default::default()
 		});	
 	}
+
+	// configure fonts
+	let mut fonts = FontDefinitions::default();
+	fonts.font_data.insert(
+		"default-font".to_owned(), 
+		egui::FontData::from_static(include_bytes!(
+			"../../assets/fonts/Roboto-Regular.ttf"
+		))
+	);
+	fonts.font_data.insert(
+		"default-font-bold".to_owned(),
+		egui::FontData::from_static(include_bytes!(
+			"../../assets/fonts/Roboto-Medium.ttf"
+		))
+	);
+	fonts.families
+		.entry(egui::FontFamily::Name("regular".into()))
+		.or_default()
+		.insert(0, "default-font".to_owned());
+	fonts.families
+		.entry(egui::FontFamily::Name("bold".into()))
+		.or_default()
+		.insert(0, "default-font-bold".to_owned());
+
+	ctx.set_fonts(fonts);
+
+	// configure text styles
+	let mut style = (*ctx.style()).clone();
+	style.text_styles = [
+		(TextStyle::Heading, FontId::new(24.0, FontFamily::Name("bold".into()))),
+		(TextStyle::Body, FontId::new(11.0, FontFamily::Name("regular".into()))),
+		(TextStyle::Button, FontId::new(12.0, FontFamily::Name("bold".into()))),
+		(TextStyle::Small, FontId::new(9.0, FontFamily::Name("regular".into())))
+	].into();
+	ctx.set_style(style);				
 }
 
 fn ui_system(
@@ -117,17 +176,23 @@ fn ui_system(
 	mut contexts: EguiContexts
 ) {
 	let ctx = contexts.ctx_mut();
+	//ctx.set_pixels_per_point(2.0);
 	egui::SidePanel::left("side_panel")
 		.default_width(200.0)
 		.show(ctx, |ui| {
-			ui.spacing_mut().item_spacing = egui::vec2(2.0, 20.0);
+			ui.spacing_mut().item_spacing = egui::vec2(2.0, 12.0);
+			
+			// center along vertical axis
+			ui.vertical_centered(|ui| {
+				ui.heading("fiber graph");
+			});
 
-			ui.heading("Fiber");
 			// .horizontal positions all children next to each other horizontally
-			//ui.horizontal(|ui| {
+			//ui.horizontal(|ui| {});
 			ui.label("input functions here");
-			ui.text_edit_singleline(&mut ui_state.func_text[0]);
-			//});
+			ui.add(TextEdit::singleline(
+				&mut ui_state.func_text[0]).margin(egui::Vec2::new(4.0, 6.0)
+			));
 
 			ui.add(egui::Slider::new(
 				&mut canvas_info.transform_pos, 
@@ -135,11 +200,13 @@ fn ui_system(
 				.text("transformation")
 			);
 
-			//ui.horizontal(|ui| { 
-				ui.label("input transformation matrices here");
-				ui.text_edit_singleline(&mut ui_state.mat_text[0]);
-			//});
-			if ui.button("Apply Transformation").clicked() {
+			ui.label("input transformation matrices here");
+			ui.add(TextEdit::singleline(
+				&mut ui_state.mat_text[0]).margin(egui::Vec2::new(4.0, 6.0)
+			));
+
+			ui.add_space(5.0);
+			if ui.button("apply transformation").clicked() {
 				println!("create comp");
 			}
 		});

@@ -18,6 +18,8 @@ readme = "README.md"
 bevy = "0.10"
 bevy_prototype_lyon = "0.8.0"
 bevy_egui = "0.20"
+atoi = "2.0.0"
+regex = "1.7.3"
 
 # enable small amount of optimization in debug mode
 [profile.dev]

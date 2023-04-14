@@ -25,7 +25,7 @@ fn framerate_text(mut _commands: Commands, asset_server: Res<AssetServer>) {
 				font_size: 20.0,
 				color: Color::WHITE,
 			}),
-		]).transform = Transform::from_xyz(1280.0, 0.0, 0.0),
+		]).transform = Transform::from_xyz(1200.0, 0.0, 0.0),
 		// help identify the Text component related to the fps 
 		FpsText
 	));
