@@ -1,4 +1,4 @@
-use std::{ops::RangeInclusive, str::FromStr};
+use std::{ops::RangeInclusive, str::FromStr, collections::LinkedList};
 use bevy::{
 	prelude::*, transform, render::{texture, color::Color}
 };
@@ -45,29 +45,39 @@ impl Image {
 }
 
 #[inline]
-fn remove_whitespace(string: &mut String) -> String {
-	let re = Regex::new(r"/s+").unwrap();
+fn remove_whitespaces(string: &mut String) -> String {
+	let re = Regex::new(r"\s+").unwrap();
 	let res = re.replace_all(string.as_str(), "");
 	String::from_str(&res).unwrap()
 }
 
-struct Function {
-	pub call: Option<fn(f32) -> f32>
+#[derive(Resource)]
+struct Functions {
+	pub call:  LinkedList<Option<fn(f32) -> f32>>,
+	pub re: Regex,
+}
+use u32 as FunctionIdx;
+
+impl Default for Functions {
+	fn default() -> Self {
+		Functions {
+			call: LinkedList::new(), 
+			// '/' does not need to be escaped
+			re: Regex::new(r"\D{3,4}?\(\w+\)|\d+|\+|\-|\*|/|\(|\)|\^").unwrap()
+		}
+	}
 }
 
-impl Function {
-	fn from_string(&mut self, string: String) -> Self {
-
-		Function{call: None}
+impl Functions {
+	fn from_string(&mut self, string: String) {
 	}
 
-	fn parse_string(string: &mut String) -> &String {
-		let s = remove_whitespace(string);
-		for c in  string.char_indices(){
-
-		}
-		
-		string	
+	fn tokenize_string(&self, string: &mut String) {
+		let s = remove_whitespaces(string);
+		println!("{}", s);
+		let tokens: Vec<&str> = self.re.split(s.as_str()).collect();
+		//for c in  string.char_indices(){
+		println!("{:?}", tokens);
 	}
 
 }
@@ -226,3 +236,15 @@ impl Plugin for FiberUi {
 		//.add_startup_system(ui_setup);
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use crate::fiber::ui::*;
+	#[test]
+	fn regex_test() {
+		let f = Functions::default();
+		f.tokenize_string(&mut String::from_str(" tan(x)+ 5").unwrap());
+
+	}
+}
+ 
