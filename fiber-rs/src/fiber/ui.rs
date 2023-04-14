@@ -7,6 +7,7 @@ use bevy::{
 
 use bevy_egui::*;
 use bevy::render::color::Color;
+use bevy_egui::egui::FontDefinitions;
 use crate::fiber::framerate::FrameRate;
 use crate::fiber::canvas::*;
 
@@ -49,12 +50,21 @@ pub struct UiState {
 	pub inverted: bool,
 	pub is_visible: bool,	
 	pub egui_texture_handle: Option<egui::TextureHandle>,
+	pub text_style_bold: TextStyle,
+	pub text_style: TextStyle,
 	pub func_text: Vec<String>,
 	pub mat_text: Vec<String>,
 }
 
 impl Default for UiState {
 	fn default() -> Self {
+		let mut fonts = FontDefinitions::default();
+		font.font_data.insert(
+			"regular-font".to_owned(), 
+			egui::FontData::from_static(include_bytes!(
+				"../../assets/fonts/Helvetica.ttf"
+			)),
+		)
 		UiState {
 			inverted: false,
 			is_visible: true,
@@ -92,7 +102,7 @@ fn egui_style_config(mut contexts: EguiContexts, mut state: ResMut<UiState>) {
 		});	
 	} else {
 		contexts.ctx_mut().set_visuals(egui::Visuals {
-			window_rounding: 5.0.into(),
+			window_rounding: 10.0.into(),
 			dark_mode: false,
 			window_shadow: egui::epaint::Shadow::small_light(),
 			..Default::default()
@@ -110,6 +120,8 @@ fn ui_system(
 	egui::SidePanel::left("side_panel")
 		.default_width(200.0)
 		.show(ctx, |ui| {
+			ui.spacing_mut().item_spacing = egui::vec2(2.0, 20.0);
+
 			ui.heading("Fiber");
 			// .horizontal positions all children next to each other horizontally
 			//ui.horizontal(|ui| {

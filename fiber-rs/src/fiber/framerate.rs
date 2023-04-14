@@ -15,17 +15,17 @@ fn framerate_text(mut _commands: Commands, asset_server: Res<AssetServer>) {
 			TextSection::new(
 				"fps: ",
 				TextStyle {
-					font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+					font: asset_server.load("fonts/Helvetica.ttf"),
 					font_size: 20.0,
 					color: Color::WHITE,
 				},
 			),
 			TextSection::from_style(TextStyle {
-				font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+				font: asset_server.load("fonts/Helvetica.ttf"),
 				font_size: 20.0,
 				color: Color::WHITE,
 			}),
-		]),
+		]).transform = Transform::from_xyz(1280.0, 0.0, 0.0),
 		// help identify the Text component related to the fps 
 		FpsText
 	));
