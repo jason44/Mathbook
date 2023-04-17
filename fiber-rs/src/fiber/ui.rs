@@ -1,4 +1,7 @@
-use std::{ops::RangeInclusive, str::FromStr, collections::LinkedList};
+use std::{
+	ops::RangeInclusive, str::FromStr, collections::{LinkedList, HashMap}, 
+	borrow::BorrowMut, mem::*
+};
 use bevy::{
 	prelude::*, transform, render::{texture, color::Color}
 };
@@ -8,6 +11,7 @@ use bevy_egui::egui::{
 	TextEdit,
 };
 use regex::Regex;
+use lazy_static::*;
 use crate::fiber::framerate::FrameRate;
 use crate::fiber::canvas::*;
 
@@ -51,35 +55,200 @@ fn remove_whitespaces(string: &mut String) -> String {
 	String::from_str(&res).unwrap()
 }
 
+// we want as many functions as possible to be predefined as a Tokens so 
+// we do not need to rely on Token::FUNC() which is reserved for user defined functions
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
+enum Token {
+	// NUM needs to be casted to a float (using mem::transmute)
+	LEFT_PAREN, RIGHT_PAREN, PLUS, MINUS, 
+	MUL, DIV, NUM(i32), VAR(char), FUNC(&'static str), 
+	POW, SIN, COS, TAN, ASIN, ACOS, ATAN, 
+	CSC, SEC, COT, SQRT, DDX, INT, INVALID
+}
+
+#[derive(Clone, Copy)]
+enum TokenType {
+	// functions need to be enclosed in parenthesis unlike operations
+	// they will be handled differently
+	OPERATOR(i32), OPERAND, FUNCTION(i32)
+}
+
+impl TokenType {
+	fn unwrap(self) -> i32 {
+		match self {
+			TokenType::OPERATOR(val) => val,
+			TokenType::FUNCTION(val) => val,
+			_ => panic!("called TokenType::unwrap on a TokenType::OPERAND value")
+		}
+	}
+}
+
+
+lazy_static! {
+	// we need &'static so that each key in the pair lives for the entire lifetime of the program
+	static ref token_map: HashMap<&'static str, Token> = {
+		let mut map = HashMap::new();
+		map.insert("(", Token::LEFT_PAREN);
+		map.insert(")", Token::RIGHT_PAREN);
+		map.insert("+", Token::PLUS);
+		map.insert("-", Token::MINUS);
+		map.insert("*", Token::MUL);
+		map.insert("/", Token::DIV);
+		map.insert("^", Token::POW);
+		map.insert("sin", Token::SIN);
+		map.insert("cos", Token::COS);
+		map.insert("tan", Token::TAN);
+		map.insert("asin", Token::ASIN);
+		map.insert("acos", Token::ACOS);
+		map.insert("atan", Token::ATAN);
+		map.insert("csc", Token::CSC);
+		map.insert("sec", Token::SEC);
+		map.insert("cot", Token::COT);
+		map.insert("sqrt", Token::SQRT);
+		map.insert("ddx", Token::DDX);
+		map.insert("int", Token::INT);
+		map
+	};
+}
+
+lazy_static! {
+	static ref type_map: HashMap<Token, TokenType> = {
+		let mut map = HashMap::new();
+		// operators are given precedence where the larger one is applied first
+		map.insert(Token::LEFT_PAREN, TokenType::OPERATOR(-1));
+		map.insert(Token::RIGHT_PAREN, TokenType::OPERATOR(-1));
+		map.insert(Token::PLUS, TokenType::OPERATOR(1));
+		map.insert(Token::MINUS, TokenType::OPERATOR(1));
+		map.insert(Token::MUL, TokenType::OPERATOR(2));
+		map.insert(Token::DIV, TokenType::OPERATOR(2));
+		map.insert(Token::POW, TokenType::OPERATOR(3)); 
+		map.insert(Token::SIN, TokenType::FUNCTION(0));
+		map.insert(Token::COS, TokenType::FUNCTION(0));
+		map.insert(Token::TAN, TokenType::FUNCTION(0));
+		map.insert(Token::ASIN, TokenType::FUNCTION(0));
+		map.insert(Token::ACOS, TokenType::FUNCTION(0));
+		map.insert(Token::ATAN, TokenType::FUNCTION(0));
+		map.insert(Token::CSC, TokenType::FUNCTION(0));
+		map.insert(Token::SEC, TokenType::FUNCTION(0));
+		map.insert(Token::COT, TokenType::FUNCTION(0));
+		map.insert(Token::SQRT, TokenType::FUNCTION(0));
+		map.insert(Token::DDX, TokenType::FUNCTION(0));
+		map.insert(Token::INT, TokenType::FUNCTION(0));
+		map
+	};
+}
+
+#[derive(Default)]
+struct Function {
+	pub call: Option<fn (f32) -> f32>,
+}
+
+impl Function {
+	
+}
+
 #[derive(Resource)]
 struct Functions {
-	pub call:  LinkedList<Option<fn(f32) -> f32>>,
-	pub re: Regex,
+	pub calls:  LinkedList<Function>,
+	re: Regex,
+	digit_re: Regex,
+	alpha_re: Regex,
 }
 use u32 as FunctionIdx;
 
 impl Default for Functions {
 	fn default() -> Self {
 		Functions {
-			call: LinkedList::new(), 
+			calls: LinkedList::new(), 
 			// '/' does not need to be escaped
-			re: Regex::new(r"\D{3,4}?\(\w+\)|\d+|\+|\-|\*|/|\(|\)|\^").unwrap()
+			//re: Regex::new(r"(\w{3,4})\(|(\w)|(\d+)|(\+)|(\-)|(\*)|(/)|(\()|(\))|(\^)").unwrap(),
+			//re: Regex::new(r"\D{3,4}\(\w+\)|\w+|\d+|\+|\-|\*|/|\(|\)|\^").unwrap(),
+			re: Regex::new(r"\[a-zA-Z]{3,4}|\+|\-|\*|/|\(|\)|\^|[a-zA-Z]+|[0-9]+").unwrap(),
+			digit_re: Regex::new(r"\d+").unwrap(),
+			alpha_re: Regex::new(r"\D+").unwrap(),
 		}
 	}
 }
 
+fn add(left: Token, right: Token) -> Option<f32> {
+	
+}
+
 impl Functions {
-	fn from_string(&mut self, string: String) {
+	fn tokenize(&self, s: &str) -> Vec<Token> {
+		let mut tokens: Vec<Token> = Vec::with_capacity(20);
+		for cap in self.re.captures_iter(s) {
+			for i in 0..cap.len() {
+				//println!("var: {}", &cap[i]);
+				let t = token_map.get(&cap[i].trim());
+				let token: Token = match t {
+					Some(e) => e.clone(),
+					None => {
+						let digit_arm = match self.digit_re.is_match(&cap[i]) {
+							true => Token::NUM(
+								// thanks Rust, I guess...
+								unsafe {std::mem::transmute::<f32, i32>(cap[i].parse::<f32>().unwrap())}
+							),
+							_ => {Token::INVALID}
+						};
+						let alpha_arm = match self.alpha_re.is_match(&cap[i]) {
+							true => Token::VAR(cap[i].parse::<char>()
+								.expect("CANNOT CONVERT TO CHAR")),
+							_ => {Token::INVALID}
+						};
+						if digit_arm != Token::INVALID {digit_arm}
+						else {alpha_arm} 
+					}
+				};
+				tokens.push(token);
+			}
+		}
+		tokens
 	}
 
-	fn tokenize_string(&self, string: &mut String) {
+	fn parse_string(&self, string: &mut String) {
 		let s = remove_whitespaces(string);
-		println!("{}", s);
-		let tokens: Vec<&str> = self.re.split(s.as_str()).collect();
-		//for c in  string.char_indices(){
-		println!("{:?}", tokens);
+		let mut tokens = self.tokenize(s.as_str());
+		//let mut objects: Vec<Token> = Vec::new();
+		//let mut operations: Vec<Token> = Vec::new();
+		let mut operand_stack: Vec<Token> = Vec::new();	
+		let mut operator_stack: Vec<Token> = Vec::new();	
+
+		let terms: Vec<fn (f32, f32) -> f32>;
+
+		for token in tokens {	
+			let toktype = type_map.get(&token);
+			match toktype {
+				// operands are not mapped to type_map because they contain values
+				None => operand_stack.push(token),
+				Some(TokenType::OPERATOR(precedence)) => {
+					// evaluate as long as an operator is already in the stack and 
+					// the newest operator is not '(' because we have to evaluate expressions in paranthesis first 
+					// also check precedence (everything should work by communitive property of multiplication and addition)
+					while operator_stack.is_empty() == false && 
+						  operator_stack[operator_stack.len()] != Token::LEFT_PAREN && 
+						  precedence <= 
+						  &(type_map.get(&operator_stack[operator_stack.len()])
+						  .unwrap().unwrap()) {
+						let right = operand_stack.pop();
+						let left = operand_stack.pop();
+						terms.push()
+					}
+					operator_stack.push(token);
+				}		
+				_ => {}
+			}
+			match token {
+				Token::LEFT_PAREN => {},
+				Token::RIGHT_PAREN => {}
+			}
+		}
 	}
 
+	fn from_string(&mut self, mut string: String) {
+		self.calls.push_back(Function::default());
+
+	}
 }
 
 #[derive(Resource)]
@@ -243,7 +412,7 @@ mod tests {
 	#[test]
 	fn regex_test() {
 		let f = Functions::default();
-		f.tokenize_string(&mut String::from_str(" tan(x)+ 5").unwrap());
+		f.parse_string(&mut String::from_str(" tan(x)+ (5+20x ) - 2x^2").unwrap());
 
 	}
 }
