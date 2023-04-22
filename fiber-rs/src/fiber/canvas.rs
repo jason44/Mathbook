@@ -287,14 +287,14 @@ fn draw(_commands: &mut Commands, canvas_info: &CanvasInfo) {
 
 fn grid_startup(mut _commands: Commands, mut canvas_info: ResMut<CanvasInfo>) {
 	canvas_info
-	//.push_func(|x|{x.exp()})
-	//.push_func(|x|{x*0.5})
-	.push_func(|x|{x.sqrt()})
-	//.push_func(|x|{x.ln()})
+	.push_func(|x|{x.exp()})
+	.push_func(|x|{x*0.5})
+	//.push_func(|x|{x.sqrt()})
+	.push_func(|x|{x.ln()})
 	//.push_func(|x|{1.0 / x})
-	.push_func(|x|{x})
-	.push_func(|x|{(x+2.0).sqrt()+x.powf(2.0)})
-	.push_func(|x|{x.tan()});
+	//.push_func(|x|{x})
+	//.push_func(|x|{(x+2.0).sqrt()+x.powf(2.0)})
+	//.push_func(|x|{x.tan()});
 
 	draw(&mut _commands, &canvas_info);
 }
@@ -416,8 +416,15 @@ fn keybind_system(
 		canvas_info.transforms.reverse();
 		let mut iter = canvas_info.transforms.iter();
 		comp = iter.next().unwrap_or(
+			/*
 			&Mat4::from_diagonal(
 				Vec4::new(1.0, 2.0, 1.0, 1.0)
+			) */
+			&Mat4::from_cols(
+				Vec4::new(3.0, -(PI/2.0).sin(), 0.0, 0.0),
+				Vec4::new(2.0, -4.0, 0.0, 0.0),
+				Vec4::new(0.0, 0.0, 1.0, 0.0),
+				Vec4::new(0.0, 0.0, 0.0, 1.0),
 			)
 		).clone();
 		for mat in iter {
