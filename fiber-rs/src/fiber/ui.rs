@@ -55,6 +55,12 @@ fn remove_whitespaces(string: &mut String) -> String {
 	String::from_str(&res).unwrap()
 }
 
+#[repr(C)]
+union TokenValue {
+	c: char,
+	i: i32,
+}
+
 // we want as many functions as possible to be predefined as a Tokens so 
 // we do not need to rely on Token::FUNC() which is reserved for user defined functions
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
@@ -64,6 +70,16 @@ enum Token {
 	MUL, DIV, NUM(i32), VAR(char), FUNC(&'static str), 
 	POW, SIN, COS, TAN, ASIN, ACOS, ATAN, 
 	CSC, SEC, COT, SQRT, DDX, INT, INVALID
+}
+
+impl Token {
+	fn value(self) -> TokenValue {
+		match self {
+			Token::VAR(val) => TokenValue{c: val},
+			Token::NUM(val) => TokenValue{i: val},
+			_ => panic!("called Token::unwrap on a Token other than VAR and NUM")
+		}
+	}
 }
 
 #[derive(Clone, Copy)]
@@ -170,8 +186,88 @@ impl Default for Functions {
 	}
 }
 
-fn add(left: Token, right: Token) -> Option<f32> {
-	
+#[inline]
+fn add(x: f32, l: f32, r: f32) -> f32 {
+	let mut lv = l;
+	let mut rv = r;
+	if lv == ONE32F {lv = x}
+	if rv == ONE32F {rv = x}
+	lv + rv
+}
+
+#[inline]
+fn sub(x: f32, l: f32, r: f32) -> f32 {
+	let mut lv = l;
+	let mut rv = r;
+	if lv == ONE32F {lv = x}
+	if rv == ONE32F {rv = x}
+	lv - rv
+}
+
+#[inline]
+fn mul(x: f32, l: f32, r: f32) -> f32 {
+	let mut lv = l;
+	let mut rv = r;
+	if lv == ONE32F {lv = x}
+	if rv == ONE32F {rv = x}
+	lv * rv
+}
+
+#[inline]
+fn div(x: f32, l: f32, r: f32) -> f32 {
+	let mut lv = l;
+	let mut rv = r;
+	if lv == ONE32F {lv = x}
+	if rv == ONE32F {rv = x}
+	lv / rv
+}
+
+#[inline]
+fn pow(x: f32, l: f32, r: f32) -> f32 {
+	let mut lv = l;
+	let mut rv = r;
+	if lv == ONE32F {lv = x}
+	if rv == ONE32F {rv = x}
+	lv.powf(rv)
+}
+
+const ONE32F: f32 = unsafe{transmute::<i32, f32>(0xFFFF)};
+fn interpret_term(operator: Token, left: Token, right: Token) -> Box<dyn FnMut(f32) -> f32> {
+	let l = left.value();
+	let r = right.value();
+	let mut lv;
+	let mut rv;
+	match l {
+		TokenValue{c} => lv = ONE32F,
+		TokenValue{i} => unsafe{transmute::<i32, f32>(i);}
+	}
+	match r {
+		TokenValue{c} => rv = ONE32F,
+		TokenValue{i} => rv = unsafe{transmute::<i32, f32>(i)}
+	}
+	match operator {
+		Token::PLUS => {
+			let __add = |x| -> f32 {add(x, lv, rv)};
+			Box::new(__add)
+		},
+		Token::MINUS => {
+			let __sub = |x| -> f32 {sub(x, lv, rv)};
+			Box::new(__sub)
+		},
+		Token::MUL => {
+			let __mul = |x| -> f32 {mul(x, lv, rv)};
+			Box::new(__mul)
+		},
+		Token::DIV => {
+			let __div = |x| -> f32 {div(x, lv, rv)};
+			Box::new(__div)
+		},
+		Token::POW => {
+			let __pow = |x| -> f32 {pow(x, lv, rv)};
+			Box::new(__pow)
+		},
+		_ => panic!("The given operator is not a valid operator Token")
+	}
 }
 
 impl Functions {
