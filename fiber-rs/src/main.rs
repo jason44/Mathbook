@@ -3,8 +3,8 @@ use std::{borrow::BorrowMut, f32::consts::PI};
 use bevy::{
 	prelude::*, 
 	input::{
-		ButtonState,
-		mouse::{MouseButtonInput, MouseWheel}, keyboard::KeyboardInput
+		ButtonState, keyboard::KeyboardInput,
+		mouse::{MouseButtonInput, MouseWheel}, 
 	},
 	window::PrimaryWindow, window::WindowResized,
 	winit::WinitSettings
@@ -24,6 +24,7 @@ fn main() {
 		.add_plugin(ShapePlugin)
 		.add_plugin(fiber::ui::FiberUi)
 		.add_plugin(fiber::canvas::Canvas)
+		.add_plugin(fiber::canvas3d::Canvas3D)
 		.add_startup_system(setup)
 		//.add_system(mouse_system)
 		.run();

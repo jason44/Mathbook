@@ -232,18 +232,20 @@ fn pow(x: f32, l: f32, r: f32) -> f32 {
 }
 
 const ONE32F: f32 = unsafe{transmute::<i32, f32>(0xFFFF)};
+/*
 fn interpret_term(operator: Token, left: Token, right: Token) -> Box<dyn FnMut(f32) -> f32> {
 	let l = left.value();
 	let r = right.value();
-	let mut lv;
-	let mut rv;
+	let mut lv: f32;
+	let mut rv: f32;
 	match l {
-		TokenValue{c} => lv = ONE32F,
-		TokenValue{i} => unsafe{transmute::<i32, f32>(i);}
+		// r# escapes the sequence which tells the compiler that it is not an identifier
+		r#unsafe{TokenValue{c}} => lv = ONE32F,
+		r#unsafe{TokenValue{i}} => lv = unsafe{transmute::<i32, f32>(i)}
 	}
 	match r {
-		TokenValue{c} => rv = ONE32F,
-		TokenValue{i} => rv = unsafe{transmute::<i32, f32>(i)}
+		r#unsafe{TokenValue{c}} => rv = ONE32F,
+		r#unsafe{TokenValue{i}} => rv = unsafe{transmute::<i32, f32>(i)},
 	}
 	match operator {
 		Token::PLUS => {
@@ -268,7 +270,7 @@ fn interpret_term(operator: Token, left: Token, right: Token) -> Box<dyn FnMut(f
 		},
 		_ => panic!("The given operator is not a valid operator Token")
 	}
-}
+} */
 
 impl Functions {
 	fn tokenize(&self, s: &str) -> Vec<Token> {
@@ -290,7 +292,7 @@ impl Functions {
 						let alpha_arm = match self.alpha_re.is_match(&cap[i]) {
 							true => Token::VAR(cap[i].parse::<char>()
 								.expect("CANNOT CONVERT TO CHAR")),
-							_ => {Token::INVALID}
+							_ => {Token::INVALID},
 						};
 						if digit_arm != Token::INVALID {digit_arm}
 						else {alpha_arm} 
@@ -328,7 +330,7 @@ impl Functions {
 						  .unwrap().unwrap()) {
 						let right = operand_stack.pop();
 						let left = operand_stack.pop();
-						terms.push()
+						//terms.push()
 					}
 					operator_stack.push(token);
 				}		
@@ -337,6 +339,7 @@ impl Functions {
 			match token {
 				Token::LEFT_PAREN => {},
 				Token::RIGHT_PAREN => {}
+				_ => {}
 			}
 		}
 	}

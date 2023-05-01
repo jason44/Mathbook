@@ -2,8 +2,8 @@ use std::{borrow::BorrowMut, f32::consts::PI};
 use bevy::{
 	prelude::*, 
 	input::{
-		ButtonState,
-		mouse::{MouseButtonInput, MouseWheel}, keyboard::KeyboardInput
+		ButtonState,keyboard::KeyboardInput,
+		mouse::{MouseButtonInput, MouseWheel}, 
 	},
 	window::PrimaryWindow, window::WindowResized,
 	winit::WinitSettings
@@ -288,10 +288,11 @@ fn draw(_commands: &mut Commands, canvas_info: &CanvasInfo) {
 fn grid_startup(mut _commands: Commands, mut canvas_info: ResMut<CanvasInfo>) {
 	canvas_info
 	.push_func(|x|{x.exp()})
-	.push_func(|x|{x*0.5})
+	//.push_func(|x|{x*0.5})
 	//.push_func(|x|{x.sqrt()})
 	.push_func(|x|{x.ln()})
-	//.push_func(|x|{1.0 / x})
+	.push_func(|x|{1.0 / x})
+	.push_func(|x|{x.sin()});
 	//.push_func(|x|{x})
 	//.push_func(|x|{(x+2.0).sqrt()+x.powf(2.0)})
 	//.push_func(|x|{x.tan()});

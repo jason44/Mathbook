@@ -21,6 +21,7 @@ bevy_egui = "0.20"
 atoi = "2.0.0"
 regex = "1.7.3"
 lazy_static = "1.4.0"
+ndarray = "0.15.6"
 
 # enable small amount of optimization in debug mode
 [profile.dev]
