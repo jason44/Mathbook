@@ -11,6 +11,9 @@ use bevy::{
 use bevy_prototype_lyon::{prelude::*, shapes::*};
 use crate::fiber::ui::UiState;
 
+// TODO: fix gridlines changing to n-1 whenever n-1/5
+// use ndarray functions to compute samples
+
 // prevents instantiation
 #[non_exhaustive]
 struct PaintStyle;
@@ -177,7 +180,6 @@ fn draw_grid(_commands: &mut Commands, canvas_info: &CanvasInfo) {
 		CanvasComponent,
 	));
 
-	// TODO, change the axes length and height after every couple translations
 	let axes_builder = GeometryBuilder::new()
 	.add(&Line(
 		Vec2::new(0.0, -h - canvas_info.translation.y.abs()),

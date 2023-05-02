@@ -313,7 +313,7 @@ impl Functions {
 		let mut operator_stack: Vec<Token> = Vec::new();	
 
 		let terms: Vec<fn (f32, f32) -> f32>;
-
+		/* 
 		for token in tokens {	
 			let toktype = type_map.get(&token);
 			match toktype {
@@ -341,7 +341,7 @@ impl Functions {
 				Token::RIGHT_PAREN => {}
 				_ => {}
 			}
-		}
+		} */
 	}
 
 	fn from_string(&mut self, mut string: String) {

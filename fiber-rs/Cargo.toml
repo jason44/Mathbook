@@ -26,9 +26,15 @@ ndarray = "0.15.6"
 # enable small amount of optimization in debug mode
 [profile.dev]
 opt-level = 1
+debug = true
+
 
 [profile.release]
 opt-level = 3
+
+[profile.release-with-debug]
+inherits = "release"
+debug = true
 
 # enable high optimization for dependencies, but not for our project
 [profile.dev.package."*"]
