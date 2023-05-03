@@ -1,5 +1,4 @@
 use std::{borrow::BorrowMut, f32::consts::PI};
-
 use bevy::{
 	prelude::*, 
 	input::{
@@ -9,11 +8,9 @@ use bevy::{
 	window::PrimaryWindow, window::WindowResized,
 	winit::WinitSettings
 };
-
 use bevy_prototype_lyon::{prelude::*, shapes::*};
 
 mod fiber;
-
 
 fn main() {
 	App::new()
@@ -22,8 +19,8 @@ fn main() {
 		//.insert_resource(WinitSettings::desktop_app()) 		
 		.add_plugins(DefaultPlugins)
 		.add_plugin(ShapePlugin)
-		.add_plugin(fiber::ui::FiberUi)
-		.add_plugin(fiber::canvas::Canvas)
+		//.add_plugin(fiber::ui::FiberUi)
+		//.add_plugin(fiber::canvas::Canvas)
 		.add_plugin(fiber::canvas3d::Canvas3D)
 		.add_startup_system(setup)
 		//.add_system(mouse_system)
@@ -37,5 +34,5 @@ fn setup(mut _commands: Commands, mut windows: Query<&mut Window>) {
 		min_width: 1280.0,
 		..default()
 	};
-	_commands.spawn(Camera2dBundle::default());
+	//_commands.spawn(Camera2dBundle::default());
 }
