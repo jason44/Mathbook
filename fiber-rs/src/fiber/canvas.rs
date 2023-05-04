@@ -274,7 +274,6 @@ fn draw(_commands: &mut Commands, canvas_info: &CanvasInfo) {
 		((canvas_info.translation.x - (canvas_info.width * canvas_info.cam_scale * 3.0)) / canvas_info.i),
 		((canvas_info.translation.x + (canvas_info.width * canvas_info.cam_scale * 3.0)) / canvas_info.i)
 	);
-	// we might not need res_scale if we divide dx by the derivative
 	let res_scale = |x: f32| {(2.0/x)+0.2};
 	println!("width: {}", canvas_info.width);
 	println!("x_range ({},{})", x_range.0, x_range.1);
@@ -323,6 +322,7 @@ fn resize_system(mut _commands: Commands,
 		canvas_info.width = x;
 		//draw_grid(&mut _commands, &canvas_info);
 	}
+	resize_reader.clear();
 }
 
 fn mouse_system(
@@ -391,6 +391,9 @@ fn mouse_system(
 	// to get l (horizontal distance from origin) out of translation.x: translation.x = l*i*cam_scale. 
 	// So, to get horizontal distance in functional coordinates just use the formula:
 	// translation.x/i*cam_scale afterwards, shift the result by translation.x and change bases to ij.
+	mouse_button_input_events.clear();
+	mouse_wheel_events.clear();
+	cursor_moved_events.clear();
 }
 
 fn keybind_system(

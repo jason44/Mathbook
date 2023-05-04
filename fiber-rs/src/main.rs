@@ -6,7 +6,8 @@ use bevy::{
 		mouse::{MouseButtonInput, MouseWheel}, 
 	},
 	window::PrimaryWindow, window::WindowResized,
-	winit::WinitSettings
+	winit::WinitSettings,
+	render::{render_resource::WgpuFeatures, settings::WgpuSettings, RenderPlugin}
 };
 use bevy_prototype_lyon::{prelude::*, shapes::*};
 
@@ -14,10 +15,16 @@ mod fiber;
 
 fn main() {
 	App::new()
-		.insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
+		//.insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
+		.insert_resource(ClearColor(Color::hex("#f5e5ba").unwrap()))
 		// only run the app when there is user input; reduce CPU/GPU usage
 		//.insert_resource(WinitSettings::desktop_app()) 		
-		.add_plugins(DefaultPlugins)
+		.add_plugins(DefaultPlugins.set(RenderPlugin {
+			wgpu_settings: WgpuSettings {
+				features: WgpuFeatures::POLYGON_MODE_LINE,
+				..default()
+			}
+		}))
 		.add_plugin(ShapePlugin)
 		//.add_plugin(fiber::ui::FiberUi)
 		//.add_plugin(fiber::canvas::Canvas)

@@ -7,8 +7,10 @@ use bevy::{
 	},
 	window::PrimaryWindow, window::WindowResized,
 	winit::WinitSettings,
-	render::mesh::{VertexAttributeValues, PrimitiveTopology, Indices},
+	render::{mesh::{VertexAttributeValues, PrimitiveTopology, Indices}, view::NoFrustumCulling,
+			 render_resource::Face},
 	math::Vec3A,
+	pbr::wireframe::{Wireframe, WireframePlugin}
 };
 use bevy_prototype_lyon::{prelude::*, shapes::*};
 use ndarray::{prelude::*, Zip};
@@ -19,9 +21,26 @@ use std::iter::FromIterator;
 struct Canvas3DInfo {
 	// separate solids and surfaces because they 
 	// are drawn with different frag shaders
-	surfaces: Vec<Handle<Mesh>>,
-	solids: Vec<Handle<Mesh>>,
+	//surfaces: Vec<Handle<Mesh>>,
+	//solids: Vec<Handle<Mesh>>,
+	// width and height of the window
+	pub width: f32,
+	pub height: f32,
+	pub wireframe: bool,
 }
+
+impl Default for Canvas3DInfo {
+	fn default() -> Self {
+		Canvas3DInfo {
+			width: 1268.0,
+			height: 720.0,
+			wireframe: false,
+		}
+	}
+}
+
+#[derive(Component)]
+struct SurfaceComponent;
 
 pub struct Surface {
 	xs: Array<f32, Ix1>,
@@ -30,6 +49,7 @@ pub struct Surface {
 	pub vertices: Vec<Vec3A>,
 	pub indices: Array<u32, Ix1>,
 	pub normals: Vec<Vec3A>,  
+	pub uv_coords: Vec::<Vec2>,
 	res: u32,
 	func: fn(&f32, &&f32) -> f32,
 }
@@ -43,6 +63,7 @@ impl Default for Surface {
 			vertices: Vec::<Vec3A>::default(),
 			indices: Array::<u32, _>::default(1),
 			normals: Vec::<Vec3A>::default(),
+			uv_coords: Vec::<Vec2>::default(),
 			res: 101,
 			func: |x, y| {x.sin() + (*y).cos()},
 		}
@@ -70,16 +91,16 @@ impl Surface {
 		self.vertices = Vec::with_capacity(z_samples.len());
 		for i in 0..res {
 			for j in 0..res {
+				self.vertices.push(Vec3A::new(x_samples[i], z_samples[(i, j)], y_samples[j]));
 				//self.vertices.push(Vec3A::new(x_samples[i], y_samples[j], z_samples[(i, j)]));
-				self.vertices.push(Vec3A::new(x_samples[i], y_samples[j], z_samples[(i, j)]));
 			}
 		}
-
+		
 		self.xs = x_samples;
 		self.ys = y_samples;
 		self.zs = z_samples;
 		self.res = res as u32;
-		println!("VERTICES\n{:?}\n-----------------------------------------", self.vertices);
+		//println!("VERTICES\n{:?}\n-----------------------------------------", self.vertices);
 		self
 	}
 
@@ -91,6 +112,7 @@ impl Surface {
 		let grid = _grid.to_shape((nu, nv)).unwrap();*/
 		let _grid = Array::from_iter(0..(nu * nv) as u32);
 		let grid = _grid.to_shape((nu, nv)).unwrap();
+		//let grid = __grid.t();
 		let mut indices = Array1::<u32>::zeros(6 * (nu - 1) * (nv - 1));
 
 		let top_left = Array::from_iter(grid.slice(s![..-1, ..-1]).iter().cloned());
@@ -111,7 +133,7 @@ impl Surface {
 		{let mut r = indices.slice_mut(s![5..;6]);
 		for i in 0..r.len() {r[i] = bottom_right[i];}}	
 
-		println!("INDICES\n{:?}\n---------------------------------", indices);
+		//println!("INDICES\n{:?}\n---------------------------------", indices);
 		self.indices = indices;	
 		self
 	}
@@ -134,10 +156,10 @@ impl Surface {
 		down[nunv-nv as usize..].copy_from_slice(indices.slice(s![nunv-nv as usize..]).as_slice().unwrap());
 		down[..nunv-nv as usize].copy_from_slice(indices.slice(s![nv as usize..nunv]).as_slice().unwrap());
 
-		println!("LEFT\n{:?}\n--------------------", left);
+		/*println!("LEFT\n{:?}\n--------------------", left);
 		println!("RIGHT\n{:?}\n--------------------", right);
 		println!("UP\n{:?}\n--------------------", up);
-		println!("DOWN\n{:?}\n--------------------", down);
+		println!("DOWN\n{:?}\n--------------------", down); */
 		let vertices = &self.vertices;
 		let mut crosses = Vec::<Vec3A>::with_capacity(nunv);
 		for i in 0..nunv {
@@ -146,14 +168,32 @@ impl Surface {
 			println!("cross: {}\n-----------------\n", 
 			(vertices[right[i] as usize] - vertices[left[i] as usize])
 			.cross(vertices[up[i] as usize] - vertices[down[i] as usize])); */
-			crosses.push((vertices[right[i] as usize] - vertices[left[i] as usize])
-			.cross(vertices[up[i] as usize] - vertices[down[i] as usize]));
+
+			//crosses.push((vertices[right[i] as usize] - vertices[left[i] as usize])
+			//.cross(vertices[up[i] as usize] - vertices[down[i] as usize]));
+
+			crosses.push((vertices[up[i] as usize] - vertices[down[i] as usize])
+			.cross(vertices[right[i] as usize] - vertices[left[i] as usize]));
+
 		}
 		//println!("CROSSES\n{:?}\n-------------------------", crosses);
 		//self.normals = crosses;
 		for normal in crosses {
 			self.normals.push(normal.normalize());
 		}		
+		self
+	}
+
+	fn compute_uv_coords(mut self) -> Self {
+		let nu = self.res as usize;
+		let nv = self.res as usize;
+		self.uv_coords = Vec::<Vec2>::with_capacity(nu);
+		let us = Array::<f32, _>::linspace(0., 1., nu*nv);
+		let vs = Array::<f32, _>::linspace(0., 1., nv*nv);
+		//println!("SIZEOF us: {}", us.len());
+		for i in 0..(nu*nv) {
+			self.uv_coords.push(Vec2::new(us[i], vs[i]));
+		}
 		self
 	}
 }
@@ -164,56 +204,72 @@ fn canvas3d_startup(mut _commands: Commands,
 	asset_server: Res<AssetServer>
 ) {
 	let surf = Surface::default()
-	.compute_points((-10.0, 10.0), (-10.0, 10.0), 100)
+	.compute_points((-20.0, 20.0), (-20.0, 20.0), 202)
 	.compute_indices()
-	.compute_surface_normals();
+	.compute_surface_normals()
+	.compute_uv_coords();
 
 	let mut surf_mesh = Mesh::new(PrimitiveTopology::TriangleList);
 	surf_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, surf.vertices);
 	surf_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, surf.normals);
+	surf_mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, surf.uv_coords);
 	surf_mesh.set_indices(Some(Indices::U32(Vec::from(surf.indices.as_slice().unwrap()))));
-	//surf_mesh.generate_tangents().expect("failed to generate surface tangents");	
+	surf_mesh.generate_tangents().unwrap();
 
-	_commands.spawn(PbrBundle {
+	_commands.insert_resource(Canvas3DInfo::default());
+
+	_commands.spawn((PbrBundle {
 		mesh: meshes.add(surf_mesh),
 		material: materials.add(StandardMaterial {
-			base_color: Color::hex("#ffd891").unwrap(),
-			metallic: 0.8,
-			perceptual_roughness: 0.8,
+			base_color: Color::Rgba {
+				red: 0.8946, blue: 0.2716, green: 0.2426, alpha: 0.80
+			}, 
+			metallic: 0.5,
+			perceptual_roughness: 0.2,
+			reflectance: 0.5,	
+			cull_mode: None,
+			double_sided: true,
+			alpha_mode: AlphaMode::Blend,
+			//flip_normal_map_y: true,
 			..default()
 		}),
 		//transform: Transform::from_xyz(0.0, 0.0, 0.0),
-		//transform: Transform::from_rotation(Quat::from_axis_angle(Vec3::new(0., 0., 1.), 1.5707)),
 		..default()
-	});
+		},
+	));
 	_commands.spawn(PbrBundle {
 		mesh: meshes.add(Mesh::try_from(shape::Icosphere {
-			radius: 2.0, 
+			radius: 3.0, 
 			subdivisions: 32,
 		}).unwrap()),
 		material: materials.add(StandardMaterial {
 			base_color: Color::hex("#ffd891").unwrap(),
-			metallic: 4.0,
-			perceptual_roughness: 1.0,
+			metallic: 1.0,
+			perceptual_roughness: 0.5,
 			..default()
 		}),
-		transform: Transform::from_xyz(0.0, 0.0, 0.0),
+		transform: Transform::from_xyz(0.0, 15.0, 0.0),
 		..default()
 	});
-	
+
 	_commands.spawn(PointLightBundle {
 		transform: Transform::from_xyz(-10.0, 60.0, -30.0),
 		point_light: PointLight {
-			intensity: 400000.0,
+			intensity: 300000.0,
 			range: 140.0,
 			..default()
 		},
 		..default()
+	}); 
+
+	_commands.insert_resource(AmbientLight {
+		color: Color::hex("#ffffff").unwrap(),
+		brightness: 0.2,
 	});
 
     _commands.spawn((
 		Camera3dBundle {
-			transform: Transform::from_xyz(0.0, 10.0, 40.0)
+			transform: Transform::from_xyz(0.0, 0.0, 40.0)
 			.looking_at(Vec3::ZERO, Vec3::Y),
 			/*projection: OrthographicProjection {
 				scale: 0.01,
@@ -221,59 +277,141 @@ fn canvas3d_startup(mut _commands: Commands,
 			}.into(), */
 			..default()
 	    },
+		CameraControls::default()
 		/*EnvironmentMapLight {
 		} */
-		CameraController::default()
 	));
 }
 
 #[derive(Component)]
-pub struct CameraController {
-    pub enabled: bool,
-    pub initialized: bool,
-    pub sensitivity: f32,
-    pub key_forward: KeyCode,
-    pub key_back: KeyCode,
-    pub key_left: KeyCode,
-    pub key_right: KeyCode,
-    pub key_up: KeyCode,
-    pub key_down: KeyCode,
-    pub key_run: KeyCode,
-    pub mouse_key_enable_mouse: MouseButton,
-    pub keyboard_key_enable_mouse: KeyCode,
-    pub walk_speed: f32,
-    pub run_speed: f32,
-    pub friction: f32,
-    pub pitch: f32,
-    pub yaw: f32,
-    pub velocity: Vec3,
+struct CameraControls {
+    /// The "focus point" to orbit around. It is automatically updated when panning the camera
+    pub focus: Vec3,
+    pub radius: f32,
+    pub upside_down: bool,
 }
 
-impl Default for CameraController {
+impl Default for CameraControls {
     fn default() -> Self {
-        Self {
-            enabled: true,
-            initialized: false,
-            sensitivity: 0.5,
-            key_forward: KeyCode::W,
-            key_back: KeyCode::S,
-            key_left: KeyCode::A,
-            key_right: KeyCode::D,
-            key_up: KeyCode::E,
-            key_down: KeyCode::Q,
-            key_run: KeyCode::LShift,
-            mouse_key_enable_mouse: MouseButton::Left,
-            keyboard_key_enable_mouse: KeyCode::M,
-            walk_speed: 2.0,
-            run_speed: 6.0,
-            friction: 0.5,
-            pitch: 0.0,
-            yaw: 0.0,
-            velocity: Vec3::ZERO,
+        CameraControls {
+            focus: Vec3::ZERO,
+            radius: 40.0,
+            upside_down: false,
         }
     }
 }
 
+/// Pan the camera with middle mouse click, zoom with scroll wheel, orbit with right mouse click.
+fn camera_system(
+	canvas_info: Res<Canvas3DInfo>,
+    mut ev_motion: EventReader<MouseMotion>,
+    mut ev_scroll: EventReader<MouseWheel>,
+    input_mouse: Res<Input<MouseButton>>,
+    mut query: Query<(&mut CameraControls, &mut Transform, &Projection)>,
+) {
+    // change input mapping for orbit and panning here
+    let orbit_button = MouseButton::Right;
+    let pan_button = MouseButton::Middle;
+
+    let mut pan = Vec2::ZERO;
+    let mut rotation_move = Vec2::ZERO;
+    let mut scroll = 0.0;
+    let mut orbit_button_changed = false;
+
+    if input_mouse.pressed(orbit_button) {
+        for ev in ev_motion.iter() {
+            rotation_move += ev.delta;
+        }
+    } else if input_mouse.pressed(pan_button) {
+        // Pan only if we're not rotating at the moment
+        for ev in ev_motion.iter() {
+            pan += ev.delta;
+        }
+    }
+    for ev in ev_scroll.iter() {
+        scroll += ev.y;
+    }
+    if input_mouse.just_released(orbit_button) || input_mouse.just_pressed(orbit_button) {
+        orbit_button_changed = true;
+    }
+
+    for (mut pan_orbit, mut transform, projection) in query.iter_mut() {
+        if orbit_button_changed {
+            // only check for upside down when orbiting started or ended this frame
+            // if the camera is "upside" down, panning horizontally would be inverted, so invert the input to make it correct
+            let up = transform.rotation * Vec3::Y;
+            pan_orbit.upside_down = up.y <= 0.0;
+        }
+
+        let mut any = false;
+        if rotation_move.length_squared() > 0.0 {
+            any = true;
+            let delta_x = {
+                let delta = rotation_move.x / canvas_info.width * std::f32::consts::PI * 2.0;
+                if pan_orbit.upside_down { -delta } else { delta }
+            };
+            let delta_y = rotation_move.y / canvas_info.height * std::f32::consts::PI;
+            let yaw = Quat::from_rotation_y(-delta_x);
+            let pitch = Quat::from_rotation_x(-delta_y);
+            transform.rotation = yaw * transform.rotation; // rotate around global y axis
+            transform.rotation = transform.rotation * pitch; // rotate around local x axis
+        } else if pan.length_squared() > 0.0 {
+            any = true;
+            // make panning distance independent of resolution and FOV,
+            if let Projection::Perspective(projection) = projection {
+                pan *= Vec2::new(projection.fov * projection.aspect_ratio, projection.fov) 
+					/ Vec2::new(canvas_info.width, canvas_info.height);
+            }
+            // translate by local axes
+            let right = transform.rotation * Vec3::X * -pan.x;
+            let up = transform.rotation * Vec3::Y * pan.y;
+            // make panning proportional to distance away from focus point
+            let translation = (right + up) * pan_orbit.radius;
+            pan_orbit.focus += translation;
+        } else if scroll.abs() > 0.0 {
+            any = true;
+            pan_orbit.radius -= scroll * pan_orbit.radius * 0.2;
+            // dont allow zoom to reach zero or you get stuck
+            pan_orbit.radius = f32::max(pan_orbit.radius, 0.05);
+        }
+
+        if any {
+            // emulating parent/child to make the yaw/y-axis rotation behave like a turntable
+            // parent = x and y rotation
+            // child = z-offset
+            let rot_matrix = Mat3::from_quat(transform.rotation);
+            transform.translation = pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, pan_orbit.radius));
+        }
+    }
+    // consume any remaining events, so they don't pile up if we don't need them
+    // (and also to avoid Bevy warning us about not checking events every frame update)
+    ev_motion.clear();
+}
+
+fn transformations_system(
+	mut _commands: Commands, 
+	mut query: Query<(&mut Transform, Entity), With<SurfaceComponent>>,
+	key: Res<Input<KeyCode>>,
+	mut canvas_info: ResMut<Canvas3DInfo>
+) {
+	let a = key.just_pressed(KeyCode::A);
+	let ctrl = key.pressed(KeyCode::LControl);
+	if a && ctrl {
+		// must redraw
+		if canvas_info.wireframe == true {
+			for (transform, entity) in query.iter_mut() {
+				_commands.entity(entity).remove::<Wireframe>();
+			}	
+			canvas_info.wireframe = false;
+		} else {
+			for (transform, entity) in query.iter_mut() {
+				_commands.entity(entity).insert(Wireframe);
+			}	
+			canvas_info.wireframe = true;
+		}
+		println!("JIODJSOFOISDJFOJOSEJRO");	
+	}
+}
 
 pub struct Canvas3D;
 
@@ -281,7 +419,9 @@ impl Plugin for Canvas3D {
 	fn build(&self, app: &mut App) {
 		println!("BUILD THIS");
 		app.add_startup_system(canvas3d_startup)
-		.add_system(camera_controller);
+		.add_plugin(WireframePlugin)
+		.add_system(camera_system)
+		.add_system(transformations_system);
 	}
 }
 
