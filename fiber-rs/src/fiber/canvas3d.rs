@@ -236,6 +236,8 @@ fn canvas3d_startup(mut _commands: Commands,
 		//transform: Transform::from_xyz(0.0, 0.0, 0.0),
 		..default()
 		},
+		Wireframe,
+		SurfaceComponent,
 	));
 	_commands.spawn(PbrBundle {
 		mesh: meshes.add(Mesh::try_from(shape::Icosphere {
@@ -304,8 +306,8 @@ impl Default for CameraControls {
 /// Pan the camera with middle mouse click, zoom with scroll wheel, orbit with right mouse click.
 fn camera_system(
 	canvas_info: Res<Canvas3DInfo>,
-    mut ev_motion: EventReader<MouseMotion>,
-    mut ev_scroll: EventReader<MouseWheel>,
+    mut motion_event: EventReader<MouseMotion>,
+    mut scroll_event: EventReader<MouseWheel>,
     input_mouse: Res<Input<MouseButton>>,
     mut query: Query<(&mut CameraControls, &mut Transform, &Projection)>,
 ) {
@@ -319,28 +321,28 @@ fn camera_system(
     let mut orbit_button_changed = false;
 
     if input_mouse.pressed(orbit_button) {
-        for ev in ev_motion.iter() {
-            rotation_move += ev.delta;
+        for event in motion_event.iter() {
+            rotation_move += event.delta;
         }
     } else if input_mouse.pressed(pan_button) {
         // Pan only if we're not rotating at the moment
-        for ev in ev_motion.iter() {
-            pan += ev.delta;
+        for event in motion_event.iter() {
+            pan += event.delta;
         }
     }
-    for ev in ev_scroll.iter() {
-        scroll += ev.y;
+    for event in scroll_event.iter() {
+        scroll += event.y;
     }
     if input_mouse.just_released(orbit_button) || input_mouse.just_pressed(orbit_button) {
         orbit_button_changed = true;
     }
 
-    for (mut pan_orbit, mut transform, projection) in query.iter_mut() {
+    for (mut controls, mut transform, projection) in query.iter_mut() {
         if orbit_button_changed {
             // only check for upside down when orbiting started or ended this frame
             // if the camera is "upside" down, panning horizontally would be inverted, so invert the input to make it correct
             let up = transform.rotation * Vec3::Y;
-            pan_orbit.upside_down = up.y <= 0.0;
+            controls.upside_down = up.y <= 0.0;
         }
 
         let mut any = false;
@@ -348,7 +350,7 @@ fn camera_system(
             any = true;
             let delta_x = {
                 let delta = rotation_move.x / canvas_info.width * std::f32::consts::PI * 2.0;
-                if pan_orbit.upside_down { -delta } else { delta }
+                if controls.upside_down { -delta } else { delta }
             };
             let delta_y = rotation_move.y / canvas_info.height * std::f32::consts::PI;
             let yaw = Quat::from_rotation_y(-delta_x);
@@ -366,13 +368,13 @@ fn camera_system(
             let right = transform.rotation * Vec3::X * -pan.x;
             let up = transform.rotation * Vec3::Y * pan.y;
             // make panning proportional to distance away from focus point
-            let translation = (right + up) * pan_orbit.radius;
-            pan_orbit.focus += translation;
+            let translation = (right + up) * controls.radius;
+            controls.focus += translation;
         } else if scroll.abs() > 0.0 {
             any = true;
-            pan_orbit.radius -= scroll * pan_orbit.radius * 0.2;
+            controls.radius -= scroll * controls.radius * 0.2;
             // dont allow zoom to reach zero or you get stuck
-            pan_orbit.radius = f32::max(pan_orbit.radius, 0.05);
+            controls.radius = f32::max(controls.radius, 0.05);
         }
 
         if any {
@@ -380,12 +382,13 @@ fn camera_system(
             // parent = x and y rotation
             // child = z-offset
             let rot_matrix = Mat3::from_quat(transform.rotation);
-            transform.translation = pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, pan_orbit.radius));
+            transform.translation = controls.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, controls.radius));
+			// looking_at has the camera look_at(origin) always
         }
     }
     // consume any remaining events, so they don't pile up if we don't need them
     // (and also to avoid Bevy warning us about not checking events every frame update)
-    ev_motion.clear();
+    motion_event.clear();
 }
 
 fn transformations_system(
