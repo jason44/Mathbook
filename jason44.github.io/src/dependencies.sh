@@ -6,3 +6,4 @@ npm install rehype-stringify
 npm install mime-types
 npm install remark-math
 npm install rehype-mathjax
+npm install remark-breaks
