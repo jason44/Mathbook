@@ -203,8 +203,13 @@ fn canvas3d_startup(mut _commands: Commands,
 	mut materials: ResMut<Assets<StandardMaterial>>,
 	asset_server: Res<AssetServer>
 ) {
-	let surf = Surface::default()
-	.compute_points((-20.0, 20.0), (-20.0, 20.0), 202)
+	//let surf = Surface::default()
+	let surf = Surface {
+		func: |x, y| {x.cos() + y.cos()},
+		..default()
+	}
+	//.compute_points((-10.0, 10.0), (-10.0, 10.0), 101)
+	.compute_points((-5.5, 5.5), (-5.5, 5.5), 40)
 	.compute_indices()
 	.compute_surface_normals()
 	.compute_uv_coords();
@@ -222,7 +227,7 @@ fn canvas3d_startup(mut _commands: Commands,
 		mesh: meshes.add(surf_mesh),
 		material: materials.add(StandardMaterial {
 			base_color: Color::Rgba {
-				red: 0.8946, blue: 0.2716, green: 0.2426, alpha: 0.80
+				red: 0.8946, blue: 0.2716, green: 0.2426, alpha: 0.87
 			}, 
 			metallic: 0.5,
 			perceptual_roughness: 0.2,

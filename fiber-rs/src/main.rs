@@ -15,8 +15,8 @@ mod fiber;
 
 fn main() {
 	App::new()
-		//.insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
-		.insert_resource(ClearColor(Color::hex("#f5e5ba").unwrap()))
+		.insert_resource(ClearColor(Color::rgb(0.15, 0.15, 0.15)))
+		//.insert_resource(ClearColor(Color::hex("#f5e5ba").unwrap()))
 		// only run the app when there is user input; reduce CPU/GPU usage
 		//.insert_resource(WinitSettings::desktop_app()) 		
 		.add_plugins(DefaultPlugins.set(RenderPlugin {

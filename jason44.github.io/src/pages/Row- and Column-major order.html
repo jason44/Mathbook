@@ -1,0 +1,23 @@
+<p>Anything you do with columns you can do with rows and vice-versa. This allows us to choose how we want line up entries in our matrices.
+Switiching between them is also trivialy since it is just a transpose operation.</p>
+<h5>Computers</h5>
+<p>From a memory point of view, column and row-major order indicate whether columns or rows are laid out in continious memory.</p>
+<p>but in programming languages, <em>row-major order</em> is slightly more intutive because we write <em>dimensional arrays</em> and vectors as rows:</p>
+<pre><code class="language-C">const float mat[][] = {{1, 2, 3},
+					   {4, 5, 6},
+			           {7, 8, 9}};
+float matd[3] = malloc(sizeof(mat[0][0])*3);
+// in this example, {4, 5, 6} is copied to 'matd'
+memcpy(matd, mat+3, 3 * sizeof(mat[0][0]));
+</code></pre>
+<p>A lot of still use <em>column-major order</em> because it is not often that we write constant matrices in code so it doesn't matter too much.</p>
+<ul>
+<li>Column vectors are also more ubiquitous in mathematics.</li>
+</ul>
+<p>The decision of choosing to line up elements in rows or columns is preference, but here are some conventions:</p>
+<h5>Systems of Equations</h5>
+<p>For systems, we usually use column vectors for <em>unknowns</em> because it looks nicer. As a result, coefficients of an equation must be lined up in rows for matrix multiplication to work correctly.</p>
+<h5>Cofactor expansion</h5>
+<p>I usually line up basis and vectors in rows rather than columns because that's what I'm used to. Some people use columns.</p>
+<h3></h3>
+<p>#linearalgebra</p>
