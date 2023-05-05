@@ -18,3 +18,5 @@ template.pdf
 template.toc
 fiber-rs/assets
 fiber-rs/target
+jason44.github.io/src/pages/*
+jason44.github.io/node_modules/*

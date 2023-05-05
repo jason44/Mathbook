@@ -6,4 +6,7 @@ npm install rehype-stringify
 npm install mime-types
 npm install remark-math
 npm install rehype-mathjax
+npm install rehype-katex
 npm install remark-breaks
+npm install jsdom
+npm install path
